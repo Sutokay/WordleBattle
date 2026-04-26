@@ -263,14 +263,16 @@ public class GameHub : Hub
         if (m == null || m.Status == "Completed") return;
 
         var rNum = m.Rounds.Count + 1;
-        if (rNum > 5) { await EndMatch(matchId); return; }
+        // Safety cap — prevent runaway OT (shouldn't happen, but just in case)
+        if (rNum > 20) { await EndMatch(matchId); return; }
 
         var word = await wordService.GetRandomWordAsync();
         var r    = new Round { MatchId = matchId, RoundNumber = rNum, Word = word, StartedAt = DateTime.UtcNow };
         db.Rounds.Add(r);
         await db.SaveChangesAsync();
 
-        _logger.LogInformation("Round {Round} started for match {MatchId}, word={Word}", rNum, matchId, word);
+        bool isOT = rNum > 5;
+        _logger.LogInformation("Round {Round} started for match {MatchId}, word={Word}, OT={OT}", rNum, matchId, word, isOT);
 
         if (_matches.TryGetValue(matchId, out var md))
         {
@@ -280,7 +282,8 @@ public class GameHub : Hub
                 p1Score  = m.Player1Score,
                 p2Score  = m.Player2Score,
                 p1Name   = m.Player1!.Username,
-                p2Name   = m.Player2!.Username
+                p2Name   = m.Player2!.Username,
+                isOvertime = isOT
             });
 
             var roundId = r.Id;
@@ -388,21 +391,33 @@ public class GameHub : Hub
         else                                r.Match.Player2Score++;
         await db.SaveChangesAsync();
 
+        bool isOT = r.RoundNumber > 5;
+
         if (_matches.TryGetValue(r.MatchId, out var md))
             await _hubCtx.Clients.Group(md.Group).SendAsync("RoundEnd", new
             {
                 winner   = winnerId,
                 p1Score  = r.Match.Player1Score,
                 p2Score  = r.Match.Player2Score,
-                word     = r.Word
+                word     = r.Word,
+                isOvertime = isOT
             });
 
         await Task.Delay(3000);
 
-        if (r.Match.Player1Score >= 3 || r.Match.Player2Score >= 3 || r.RoundNumber >= 5)
+        if (isOT)
+        {
+            // In overtime, the first player to solve wins the entire match
+            await EndMatch(r.MatchId, overtimeWinnerId: winnerId);
+        }
+        else if (r.Match.Player1Score >= 3 || r.Match.Player2Score >= 3 || r.RoundNumber >= 5)
+        {
             await EndMatch(r.MatchId);
+        }
         else
+        {
             await StartRound(r.MatchId);
+        }
     }
 
     private async Task TimeoutRound(int roundId)
@@ -419,24 +434,43 @@ public class GameHub : Hub
         r.CompletedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
+        bool isOT = r.RoundNumber > 5;
+        bool stillTied = r.Match!.Player1Score == r.Match.Player2Score;
+
         if (_matches.TryGetValue(r.MatchId, out var md))
             await _hubCtx.Clients.Group(md.Group).SendAsync("RoundEnd", new
             {
                 winner  = (int?)null,
                 p1Score = r.Match!.Player1Score,
                 p2Score = r.Match.Player2Score,
-                word    = r.Word
+                word    = r.Word,
+                isOvertime = isOT
             });
 
         await Task.Delay(3000);
 
-        if (r.Match!.Player1Score >= 3 || r.Match.Player2Score >= 3 || r.RoundNumber >= 5)
+        if (r.Match!.Player1Score >= 3 || r.Match.Player2Score >= 3)
+        {
+            // Someone hit 3 wins — end normally
             await EndMatch(r.MatchId);
-        else
+        }
+        else if (r.RoundNumber >= 5 && stillTied)
+        {
+            // Tied after round 5 (or tied OT timeout) → start another OT round
             await StartRound(r.MatchId);
+        }
+        else if (r.RoundNumber >= 5)
+        {
+            // Round 5 finished, someone leads — end
+            await EndMatch(r.MatchId);
+        }
+        else
+        {
+            await StartRound(r.MatchId);
+        }
     }
 
-    private async Task EndMatch(int matchId)
+    private async Task EndMatch(int matchId, int? overtimeWinnerId = null)
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -459,7 +493,17 @@ public class GameHub : Hub
         var p2 = m.Player2;
         if (p1 == null || p2 == null) return;
 
-        if (m.Player1Score > m.Player2Score)
+        // Determine actual winner: overtime winner overrides score comparison
+        int? winnerId = overtimeWinnerId;
+        if (winnerId == null)
+        {
+            if      (m.Player1Score > m.Player2Score) winnerId = m.Player1Id;
+            else if (m.Player2Score > m.Player1Score) winnerId = m.Player2Id;
+            // If still null after 5 rounds with equal score, the logic should
+            // have gone to OT — but handle gracefully just in case
+        }
+
+        if (winnerId == m.Player1Id)
         {
             m.WinnerId = m.Player1Id;
             p1Delta =  winDelta;
@@ -467,7 +511,7 @@ public class GameHub : Hub
             p1.Wins++;   p1.Points += winDelta;
             p2.Losses++; p2.Points  = Math.Max(0, p2.Points - lossDelta);
         }
-        else if (m.Player2Score > m.Player1Score)
+        else if (winnerId == m.Player2Id)
         {
             m.WinnerId = m.Player2Id;
             p2Delta =  winDelta;
@@ -475,14 +519,7 @@ public class GameHub : Hub
             p2.Wins++;   p2.Points += winDelta;
             p1.Losses++; p1.Points  = Math.Max(0, p1.Points - lossDelta);
         }
-        else  // Draw — both players earn half the win amount
-        {
-            int drawDelta = Random.Shared.Next(50, 61);
-            p1Delta = drawDelta;
-            p2Delta = drawDelta;
-            p1.Points += drawDelta;
-            p2.Points += drawDelta;
-        }
+        // No draw path — draws go to overtime
 
         m.Player1PointsDelta = p1Delta;
         m.Player2PointsDelta = p2Delta;
@@ -518,4 +555,5 @@ public class MatchState
     public string Group = "";
     public string P1Conn = ""; public int P1UserId;
     public string P2Conn = ""; public int P2UserId;
+    public bool   IsOvertime = false;
 }

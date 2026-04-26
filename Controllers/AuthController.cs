@@ -53,7 +53,7 @@ public class AuthController : ControllerBase
             .Where(m => m.Status == "Completed" &&
                         (userIds.Contains(m.Player1Id) ||
                          (m.Player2Id.HasValue && userIds.Contains(m.Player2Id.Value))))
-            .Select(m => new { m.Player1Id, m.Player2Id, m.WinnerId })
+            .Select(m => new { m.Player1Id, m.Player2Id, m.WinnerId, m.CompletedAt })
             .ToListAsync();
 
         var winsMap   = new Dictionary<int, int>();
@@ -65,6 +65,22 @@ public class AuthController : ControllerBase
             int loserId = m.Player1Id == m.WinnerId.Value ? (m.Player2Id ?? 0) : m.Player1Id;
             if (loserId > 0)
                 lossesMap[loserId] = lossesMap.GetValueOrDefault(loserId) + 1;
+        }
+
+        // Current win streak per user (consecutive wins from most recent match backwards)
+        var streakMap = new Dictionary<int, int>();
+        foreach (var uid in userIds)
+        {
+            int streak = 0;
+            var userMatches = completedMatches
+                .Where(m => m.Player1Id == uid || (m.Player2Id.HasValue && m.Player2Id.Value == uid))
+                .OrderByDescending(m => m.CompletedAt);
+            foreach (var sm in userMatches)
+            {
+                if (sm.WinnerId.HasValue && sm.WinnerId.Value == uid) streak++;
+                else break;
+            }
+            streakMap[uid] = streak;
         }
 
         var result = users.Select((u, i) =>
@@ -82,6 +98,7 @@ public class AuthController : ControllerBase
                 wins,
                 losses,
                 winRate   = total == 0 ? 0 : (int)Math.Round(wins * 100.0 / total),
+                streak    = streakMap.GetValueOrDefault(u.Id),
                 rank      = u.GetRank(),
                 rankEmoji = u.GetRankEmoji(),
                 picture   = prof?.Picture,

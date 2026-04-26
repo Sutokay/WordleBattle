@@ -8,13 +8,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=17">
+    <link rel="stylesheet" href="css/style.css?v=18">
 </head>
 <body>
 
 <header class="site-header">
-    <span class="site-title" onclick="onTitleClick()">WordleBattle</span>
+    <span class="site-title" onclick="onTitleClick()"><span class="title-wordle">Wordle</span><span class="title-battle">Battle</span></span>
     <div class="header-settings-wrap" id="headerSettingsWrap">
+        <button class="header-friend-btn hidden" id="headerFriendBtn" onclick="openFriendsModal()" title="Friend requests">
+            <span id="headerFriendBadge">0</span>
+        </button>
         <button class="header-hamburger" id="settingsBtn" onclick="toggleSettings()" title="Menu" aria-label="Settings">
             <span></span><span></span><span></span>
         </button>
@@ -116,6 +119,7 @@
 <div id="gameScreen" class="screen hidden">
     <div class="game-header">
         <div class="game-player-panel" id="p1Panel">
+            <span class="game-streak-badge hidden" id="p1Streak"></span>
             <div class="game-player-avatar" id="p1Avatar"></div>
             <div class="game-player-meta">
                 <div class="game-player-name" id="p1Name">You</div>
@@ -131,13 +135,14 @@
         </div>
 
         <div class="game-player-panel right" id="p2Panel">
-            <div class="score" id="p2Score">0</div>
+            <span class="game-streak-badge hidden" id="p2Streak"></span>
+            <div class="game-player-avatar" id="p2Avatar"></div>
             <div class="game-player-meta right">
                 <div class="game-player-name" id="p2Name">Opponent</div>
                 <div class="game-player-rank" id="p2Rank"></div>
                 <div class="game-player-title hidden" id="p2Title"></div>
             </div>
-            <div class="game-player-avatar" id="p2Avatar"></div>
+            <div class="score" id="p2Score">0</div>
         </div>
     </div>
 
@@ -195,9 +200,17 @@
                 <div class="rank-bar-side right" id="resultNextRank"></div>
             </div>
         </div>
-        <div class="result-buttons">
+        <div class="result-buttons" id="resultButtons">
             <button onclick="showMenu()" class="btn-secondary">Menu</button>
-            <button onclick="playGame()">Play Again</button>
+            <button id="playAgainBtn" onclick="playGame()">Play Again</button>
+        </div>
+        <div id="resultMatchmakingWrap" class="result-matchmaking hidden">
+            <div class="result-matchmaking-row">
+                <div class="loader" style="width:20px;height:20px;border-width:2.5px;margin:0;flex-shrink:0"></div>
+                <span>Searching for opponent…</span>
+                <span id="resultQueueTimer" class="result-queue-timer">0:00</span>
+            </div>
+            <button class="btn-secondary" style="margin-top:8px;padding:0 20px;height:36px;font-size:0.82rem" onclick="cancelQueue()">Cancel</button>
         </div>
     </div>
 </div>
@@ -227,7 +240,10 @@
             </div>
             <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="handlePicUpload(event)">
             <div class="profile-header-info">
-                <div class="profile-username" id="profileUsername"></div>
+                <div class="profile-username-row">
+                    <div class="profile-username" id="profileUsername"></div>
+                    <span class="profile-streak-badge hidden" id="profileStreakBadge"></span>
+                </div>
                 <div class="profile-rank-badge" id="profileRankBadge"></div>
                 <div class="profile-title-badge hidden" id="profileTitleBadge"></div>
                 <div class="profile-bio-wrap">
@@ -424,7 +440,10 @@
                 <div class="profile-avatar" id="ppAvatar"></div>
             </div>
             <div class="profile-header-info">
-                <div class="profile-username" id="ppUsername"></div>
+                <div class="profile-username-row">
+                    <div class="profile-username" id="ppUsername"></div>
+                    <span class="profile-streak-badge hidden" id="ppStreakBadge"></span>
+                </div>
                 <div class="profile-rank-badge" id="ppRank"></div>
                 <div class="profile-title-badge hidden" id="ppTitle"></div>
                 <div class="pp-bio" id="ppBio"></div>
@@ -448,6 +467,6 @@
     </div>
 </div>
 
-<script src="js/game.js?v=17"></script>
+<script src="js/game.js?v=18"></script>
 </body>
 </html>

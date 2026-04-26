@@ -48,6 +48,32 @@ html, body {
     right: 16px;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.header-friend-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+#headerFriendBadge {
+    background: #cc3333;
+    color: #fff;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    line-height: 14px;
+    text-align: center;
+    display: block;
 }
 
 .header-hamburger {
@@ -83,12 +109,13 @@ html, body {
     font-size: 1.35rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: var(--text);
     user-select: none;
     cursor: pointer;
     transition: opacity 0.15s;
 }
 .site-title:hover { opacity: 0.72; }
+.title-wordle { color: #ffffff; }
+.title-battle  { color: #b8b8b8; }
 
 .screen {
     min-height: 100vh;
@@ -489,7 +516,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 }
 .leaderboard-row {
     display: grid;
-    grid-template-columns: 16px 26px 1fr 46px 20px 30px;
+    grid-template-columns: 16px 26px 1fr 46px 34px 20px 32px;
     align-items: center;
     gap: 4px;
     padding: 5px 10px;
@@ -503,7 +530,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 
 .leaderboard-header {
     display: grid;
-    grid-template-columns: 16px 26px 1fr 46px 20px 30px;
+    grid-template-columns: 16px 26px 1fr 46px 34px 20px 32px;
     gap: 4px;
     padding: 4px 10px 6px;
     font-size: 0.6rem;
@@ -580,12 +607,58 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     font-size: 0.85rem;
     line-height: 1;
 }
+.lb-wins {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
 .lb-wr {
     font-size: 0.72rem;
     color: var(--text-dim);
     text-align: right;
 }
+.lb-streak {
+    font-size: 0.68rem;
+    color: #ff9500;
+    font-weight: 700;
+    margin-left: 3px;
+}
 .lb-empty { color: var(--text-muted) !important; }
+
+/* Result screen matchmaking */
+.result-matchmaking {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 0 4px;
+}
+.result-matchmaking-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.84rem;
+    color: var(--text-dim);
+}
+.result-queue-timer {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* Profile streak badge */
+.profile-username-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.profile-streak-badge {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #ff9500;
+    line-height: 1;
+}
 .recent-match-row {
     display: flex;
     align-items: center;
@@ -741,6 +814,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     flex-direction: column;
     gap: 2px;
     min-width: 0;
+    flex: 1;
 }
 .game-player-meta.right {
     align-items: flex-end;
@@ -776,8 +850,16 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--green);
+    color: var(--text-dim);
     white-space: nowrap;
+}
+.game-streak-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #ff9500;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1;
 }
 
 .score {
@@ -1632,62 +1714,64 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 
 /* Title tier colors — smooth progressive glow matching rank palette
    Applied to: .title-item-name (picker), .pp-title (player profile modal),
-               .profile-title-badge (own profile modal), .menu-title-badge (side menu) */
+               .profile-title-badge (own profile modal), .menu-title-badge (side menu),
+               .game-player-title (in-game panel) */
 .title-item-name.tier-bronze,
 .pp-title.tier-bronze,
 .profile-title-badge.tier-bronze,
-.menu-title-badge.tier-bronze      { color: #CD7F32; }
+.menu-title-badge.tier-bronze,
+.game-player-title.tier-bronze     { color: #CD7F32; }
 .title-item-name.tier-silver, .pp-title.tier-silver,
-.profile-title-badge.tier-silver, .menu-title-badge.tier-silver
+.profile-title-badge.tier-silver, .menu-title-badge.tier-silver, .game-player-title.tier-silver
 { color: #C8C8C8; animation: title-silver 3s ease-in-out infinite; }
 @keyframes title-silver {
     0%, 100% { color: #A8A8A8; text-shadow: none; }
     50%       { color: #E0E0E0; text-shadow: 0 0 8px rgba(210,210,210,0.55); }
 }
 .title-item-name.tier-gold, .pp-title.tier-gold,
-.profile-title-badge.tier-gold, .menu-title-badge.tier-gold
+.profile-title-badge.tier-gold, .menu-title-badge.tier-gold, .game-player-title.tier-gold
 { color: #FFD700; animation: title-gold 2.8s ease-in-out infinite; }
 @keyframes title-gold {
     0%, 100% { color: #C89A0A; text-shadow: 0 0 5px rgba(200,150,10,0.3); }
     50%       { color: #FFD700; text-shadow: 0 0 12px rgba(255,215,0,0.6); }
 }
 .title-item-name.tier-platinum, .pp-title.tier-platinum,
-.profile-title-badge.tier-platinum, .menu-title-badge.tier-platinum
+.profile-title-badge.tier-platinum, .menu-title-badge.tier-platinum, .game-player-title.tier-platinum
 { color: #E0E0FF; animation: title-platinum 3s ease-in-out infinite; }
 @keyframes title-platinum {
     0%, 100% { color: #B8B8D8; text-shadow: 0 0 6px rgba(180,180,220,0.3); }
     50%       { color: #E8E8FF; text-shadow: 0 0 14px rgba(210,210,255,0.65); }
 }
 .title-item-name.tier-diamond, .pp-title.tier-diamond,
-.profile-title-badge.tier-diamond, .menu-title-badge.tier-diamond
+.profile-title-badge.tier-diamond, .menu-title-badge.tier-diamond, .game-player-title.tier-diamond
 { color: #90E0EF; animation: title-diamond 2.5s ease-in-out infinite; }
 @keyframes title-diamond {
     0%, 100% { color: #48CAE4; text-shadow: 0 0 7px rgba(72,202,228,0.4); }
     50%       { color: #90E0EF; text-shadow: 0 0 16px rgba(144,224,239,0.75); }
 }
 .title-item-name.tier-champion, .pp-title.tier-champion,
-.profile-title-badge.tier-champion, .menu-title-badge.tier-champion
+.profile-title-badge.tier-champion, .menu-title-badge.tier-champion, .game-player-title.tier-champion
 { color: #F77F00; animation: title-champion 2.2s ease-in-out infinite; }
 @keyframes title-champion {
     0%, 100% { color: #C86000; text-shadow: 0 0 7px rgba(200,96,0,0.4); }
     50%       { color: #FF9A20; text-shadow: 0 0 16px rgba(247,127,0,0.7); }
 }
 .title-item-name.tier-master, .pp-title.tier-master,
-.profile-title-badge.tier-master, .menu-title-badge.tier-master
+.profile-title-badge.tier-master, .menu-title-badge.tier-master, .game-player-title.tier-master
 { color: #C77DFF; animation: title-master 2s ease-in-out infinite; }
 @keyframes title-master {
     0%, 100% { color: #9B4FCC; text-shadow: 0 0 8px rgba(155,79,204,0.45); }
     50%       { color: #C77DFF; text-shadow: 0 0 18px rgba(199,125,255,0.8); }
 }
 .title-item-name.tier-grandmaster, .pp-title.tier-grandmaster,
-.profile-title-badge.tier-grandmaster, .menu-title-badge.tier-grandmaster
+.profile-title-badge.tier-grandmaster, .menu-title-badge.tier-grandmaster, .game-player-title.tier-grandmaster
 { color: #FF79C6; animation: title-gm 1.8s ease-in-out infinite; }
 @keyframes title-gm {
     0%, 100% { color: #E0006A; text-shadow: 0 0 9px rgba(224,0,106,0.5); }
     50%       { color: #FF79C6; text-shadow: 0 0 20px rgba(255,121,198,0.85); }
 }
 .title-item-name.tier-lexicongod, .pp-title.tier-lexicongod,
-.profile-title-badge.tier-lexicongod, .menu-title-badge.tier-lexicongod {
+.profile-title-badge.tier-lexicongod, .menu-title-badge.tier-lexicongod, .game-player-title.tier-lexicongod {
     background: linear-gradient(90deg, #FFD700 0%, #FF7700 30%, #CC00FF 55%, #00E87A 75%, #FFD700 100%);
     background-size: 300% 100%;
     -webkit-background-clip: text;
@@ -1696,7 +1780,8 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     animation: lexgod-text 3s linear infinite;
 }
 @keyframes lexgod-text { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
-.title-item-name.tier-achievement { color: var(--text-dim); }
+.title-item-name.tier-achievement,
+.game-player-title.tier-achievement { color: var(--text-dim); }
 
 /* Title item visual weight scales with rank tier */
 .title-item:has(.tier-gold)        { background: rgba(255,215,0,0.04); }

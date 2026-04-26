@@ -199,6 +199,8 @@ async function forfeitAndGoHome() {
     document.getElementById('resultOppScore').textContent = oppMatchScore;
     const triggerBar = renderRankProgress(currentUser.points, pointsDelta);
     populateResultPlayers(currentUser.points);
+    document.getElementById('resultButtons')?.classList.remove('hidden');
+    document.getElementById('resultMatchmakingWrap')?.classList.add('hidden');
     showScreen('resultScreen');
     triggerBar();
 }
@@ -422,13 +424,44 @@ async function loadFriendRequests() {
         const badge = document.getElementById('friendRequestsBadge');
         if (!Array.isArray(data) || !data.length) {
             list.innerHTML = '<div class="friends-empty">No pending requests</div>';
-            badge.classList.add('hidden');
+            if (badge) badge.classList.add('hidden');
+            updateHeaderFriendBadge(0);
             return;
         }
-        badge.textContent = data.length;
-        badge.classList.remove('hidden');
+        if (badge) { badge.textContent = data.length; badge.classList.remove('hidden'); }
+        updateHeaderFriendBadge(data.length);
         list.innerHTML = data.map(f => friendItemHTML(f, 'request')).join('');
     } catch { list.innerHTML = '<div class="friends-empty">Failed to load</div>'; }
+}
+
+function updateHeaderFriendBadge(count) {
+    const btn   = document.getElementById('headerFriendBtn');
+    const badge = document.getElementById('headerFriendBadge');
+    if (!btn || !badge) return;
+    if (count > 0) {
+        badge.textContent = count;
+        btn.classList.remove('hidden');
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+let _friendBadgePollTimer = null;
+async function pollFriendRequestsBadge() {
+    const token = sessionStorage.getItem('token');
+    if (!token) return;
+    try {
+        const res  = await fetch('/api/friends/requests', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!res.ok) return;
+        const data = await res.json();
+        updateHeaderFriendBadge(Array.isArray(data) ? data.length : 0);
+    } catch {}
+}
+
+function startFriendBadgePolling() {
+    if (_friendBadgePollTimer) return;
+    pollFriendRequestsBadge();
+    _friendBadgePollTimer = setInterval(pollFriendRequestsBadge, 45000);
 }
 
 function friendItemHTML(f, mode) {
@@ -438,10 +471,10 @@ function friendItemHTML(f, mode) {
         ? `<button class="friend-btn accept" onclick="acceptFriendRequest(${f.friendshipId})">Accept</button>
            <button class="friend-btn remove" onclick="declineFriendRequest(${f.friendshipId})">Decline</button>`
         : `<button class="friend-btn remove" onclick="removeFriend(${f.friendshipId})">Remove</button>`;
-    const profileClick = f.userId ? ` onclick="openPlayerProfile(${f.userId})" style="cursor:pointer"` : '';
+    const profileClick = f.userId ? ` onclick="closeFriendsModal();openPlayerProfile(${f.userId})" style="cursor:pointer"` : '';
     const avStyle      = pic + (f.userId ? ';cursor:pointer' : '');
     return `<div class="friend-item" id="fi-${f.friendshipId}">
-        <div class="friend-avatar" style="${avStyle}"${f.userId ? ` onclick="openPlayerProfile(${f.userId})"` : ''}>${pic ? '' : initial}</div>
+        <div class="friend-avatar" style="${avStyle}"${f.userId ? ` onclick="closeFriendsModal();openPlayerProfile(${f.userId})"` : ''}>${pic ? '' : initial}</div>
         <div class="friend-info"${profileClick}>
             <div class="friend-name">${escHtml(capName(f.username))}</div>
             <div class="friend-rank">${rankIconHTMLFromName(f.rank, 14)} ${escHtml(f.rank)}</div>
@@ -517,7 +550,7 @@ async function doFriendSearch(name) {
             const picStyle = d.picture ? `background-image:url(${d.picture});background-size:cover;background-position:center` : '';
             const ini = escHtml(d.username.charAt(0).toUpperCase());
             return `
-                <div class="friend-search-result-item" onclick="openPlayerProfile(${d.userId})">
+                <div class="friend-search-result-item" onclick="closeFriendsModal();openPlayerProfile(${d.userId})">
                     <div class="friend-search-result-avatar" style="${picStyle}">${d.picture ? '' : ini}</div>
                     <div class="friend-search-result-info">
                         <div class="friend-search-result-name">${escHtml(capName(d.username))}</div>
@@ -653,6 +686,12 @@ async function openPlayerProfile(userId) {
 
         // Info
         document.getElementById('ppUsername').textContent = capName(d.username);
+        const ppStreak = document.getElementById('ppStreakBadge');
+        if (ppStreak) {
+            const streak = d.stats?.currentStreak ?? 0;
+            ppStreak.textContent = streak > 0 ? '🔥' + streak : '';
+            ppStreak.classList.toggle('hidden', streak === 0);
+        }
         document.getElementById('ppRank').innerHTML =
             rankIconHTMLFromName(d.rank, 16) + ' ' + escHtml(d.rank);
 
@@ -855,6 +894,7 @@ async function fetchLeaderboard() {
             `<div class="leaderboard-header">
                 <span>#</span><span></span><span>Player</span>
                 <span style="text-align:right">Pts</span>
+                <span style="text-align:right">Wins</span>
                 <span></span>
                 <span style="text-align:right">W/R</span>
             </div>`;
@@ -866,7 +906,7 @@ async function fetchLeaderboard() {
                 row.innerHTML =
                     `<span class="lb-pos">${i + 1}</span>` +
                     `<span></span><span class="lb-name">—</span>` +
-                    `<span class="lb-pts">—</span><span></span><span class="lb-wr">—</span>`;
+                    `<span class="lb-pts">—</span><span class="lb-wins">—</span><span></span><span class="lb-wr">—</span>`;
                 list.appendChild(row);
                 return;
             }
@@ -886,9 +926,14 @@ async function fetchLeaderboard() {
                 return s;
             };
 
+            const streakHtml = p.streak > 0
+                ? ` <span class="lb-streak">🔥${p.streak}</span>`
+                : '';
+
             row.insertBefore(cell(`lb-pos${posClass}`, p.position), av);
-            row.appendChild(cell('lb-name', escHtml(capName(p.username))));
+            row.appendChild(cell('lb-name', escHtml(capName(p.username)) + streakHtml));
             row.appendChild(cell('lb-pts', p.points));
+            row.appendChild(cell('lb-wins', p.wins ?? 0));
             row.appendChild(cell('lb-rank-icon', icon));
             row.appendChild(cell('lb-wr', p.winRate + '%'));
             row.style.cursor = 'pointer';
@@ -917,6 +962,7 @@ function showMenu() {
     fetchLeaderboard();
     fetchRecentMatches();
     fetchUserProfile();
+    startFriendBadgePolling();
 
     const token = sessionStorage.getItem('token');
     if (!token) return;
@@ -967,6 +1013,8 @@ function logout() {
     sessionStorage.removeItem('token');
     currentUser = null;
     if (conn) { conn.stop(); conn = null; }
+    if (_friendBadgePollTimer) { clearInterval(_friendBadgePollTimer); _friendBadgePollTimer = null; }
+    updateHeaderFriendBadge(0);
     showScreen('authScreen');
 }
 
@@ -1002,6 +1050,9 @@ async function initSignalR() {
         const matchmakingEl = document.getElementById('menuMatchmaking');
         if (findBtn)       { findBtn.textContent = 'Find Game'; findBtn.onclick = playGame; }
         if (matchmakingEl) { matchmakingEl.classList.add('hidden'); }
+        // Reset result screen matchmaking if applicable
+        document.getElementById('resultButtons')?.classList.remove('hidden');
+        document.getElementById('resultMatchmakingWrap')?.classList.add('hidden');
 
         const myName  = capName(currentUser.username);
         const oppName = data.opponent;
@@ -1054,6 +1105,8 @@ async function initSignalR() {
         document.getElementById('resultOppScore').textContent  = data.oppScore ?? '—';
         const triggerBar = renderRankProgress(data.myPoints, data.pointsDelta ?? 10);
         populateResultPlayers(data.myPoints);
+        document.getElementById('resultButtons')?.classList.remove('hidden');
+        document.getElementById('resultMatchmakingWrap')?.classList.add('hidden');
         showScreen('resultScreen');
         triggerBar();
     });
@@ -1106,9 +1159,21 @@ function populateGamePanels(p1Name, p2Name) {
         const titleDef = TITLES.find(t => t.id === titleId);
         if (titleDef && titleId) {
             myTitleEl.textContent = titleDef.label;
-            myTitleEl.classList.remove('hidden');
+            myTitleEl.className = 'game-player-title' + (titleDef.tier ? ' tier-' + titleDef.tier : '');
         } else {
-            myTitleEl.classList.add('hidden');
+            myTitleEl.className = 'game-player-title hidden';
+        }
+    }
+
+    // Streak badge for my panel
+    const myStreakEl = document.getElementById(`p${myPanelNum}Streak`);
+    if (myStreakEl) {
+        const myStreak = userProfile?.stats?.currentStreak ?? 0;
+        if (myStreak > 0) {
+            myStreakEl.textContent = '🔥' + myStreak;
+            myStreakEl.classList.remove('hidden');
+        } else {
+            myStreakEl.classList.add('hidden');
         }
     }
 
@@ -1145,9 +1210,21 @@ function populateGamePanels(p1Name, p2Name) {
         const titleDef = TITLES.find(t => t.id === titleId);
         if (titleDef && titleId) {
             oppTitleEl.textContent = titleDef.label;
-            oppTitleEl.classList.remove('hidden');
+            oppTitleEl.className = 'game-player-title' + (titleDef.tier ? ' tier-' + titleDef.tier : '');
         } else {
-            oppTitleEl.classList.add('hidden');
+            oppTitleEl.className = 'game-player-title hidden';
+        }
+    }
+
+    // Streak badge for opponent panel
+    const oppStreakEl = document.getElementById(`p${oppPanelNum}Streak`);
+    if (oppStreakEl) {
+        const oppStreak = _opponentProfile?.stats?.currentStreak ?? 0;
+        if (oppStreak > 0) {
+            oppStreakEl.textContent = '🔥' + oppStreak;
+            oppStreakEl.classList.remove('hidden');
+        } else {
+            oppStreakEl.classList.add('hidden');
         }
     }
 }
@@ -1173,8 +1250,10 @@ function updateQueueTimerDisplay() {
     const m = Math.floor(queueSeconds / 60);
     const s = queueSeconds % 60;
     const timeStr = `${m}:${String(s).padStart(2, '0')}`;
-    const el = document.getElementById('menuQueueTimer');
-    if (el) el.textContent = timeStr;
+    const el  = document.getElementById('menuQueueTimer');
+    const rel = document.getElementById('resultQueueTimer');
+    if (el)  el.textContent  = timeStr;
+    if (rel) rel.textContent = timeStr;
 }
 
 async function playGame() {
@@ -1186,19 +1265,31 @@ async function playGame() {
 
     const findBtn       = document.getElementById('findGameBtn');
     const matchmakingEl = document.getElementById('menuMatchmaking');
-    findBtn.textContent = 'Cancel Matchmaking';
-    findBtn.onclick     = cancelQueue;
-    matchmakingEl.classList.remove('hidden');
+    if (findBtn)       { findBtn.textContent = 'Cancel Matchmaking'; findBtn.onclick = cancelQueue; }
+    if (matchmakingEl) matchmakingEl.classList.remove('hidden');
     startQueueTimer();
+
+    // Show matchmaking state on result screen if that's where we are
+    const resultButtons     = document.getElementById('resultButtons');
+    const resultMatchmaking = document.getElementById('resultMatchmakingWrap');
+    const playAgainBtn      = document.getElementById('playAgainBtn');
+    const onResultScreen    = !document.getElementById('resultScreen').classList.contains('hidden');
+    if (onResultScreen) {
+        if (resultButtons)     resultButtons.classList.add('hidden');
+        if (resultMatchmaking) resultMatchmaking.classList.remove('hidden');
+        const rel = document.getElementById('resultQueueTimer');
+        if (rel) rel.textContent = '0:00';
+    }
 
     try {
         await conn.invoke('FindGame');
     } catch (err) {
         _inQueue = false;
         stopQueueTimer();
-        findBtn.textContent = 'Find Game';
-        findBtn.onclick     = playGame;
-        matchmakingEl.classList.add('hidden');
+        if (findBtn)       { findBtn.textContent = 'Find Game'; findBtn.onclick = playGame; }
+        if (matchmakingEl) matchmakingEl.classList.add('hidden');
+        if (resultButtons)     resultButtons.classList.remove('hidden');
+        if (resultMatchmaking) resultMatchmaking.classList.add('hidden');
         showError('Failed to join queue');
     }
 }
@@ -1210,6 +1301,11 @@ async function cancelQueue() {
     const matchmakingEl = document.getElementById('menuMatchmaking');
     if (findBtn)       { findBtn.textContent = 'Find Game'; findBtn.onclick = playGame; }
     if (matchmakingEl) { matchmakingEl.classList.add('hidden'); }
+    // Reset result screen matchmaking state
+    const resultButtons     = document.getElementById('resultButtons');
+    const resultMatchmaking = document.getElementById('resultMatchmakingWrap');
+    if (resultButtons)     resultButtons.classList.remove('hidden');
+    if (resultMatchmaking) resultMatchmaking.classList.add('hidden');
     try { if (conn && conn.state === signalR.HubConnectionState.Connected) await conn.invoke('CancelQueue'); } catch {}
 }
 
@@ -1224,7 +1320,13 @@ function startRound(data) {
     hideRoundModal();
     showScreen('gameScreen');
 
-    document.getElementById('roundNum').textContent = data.round;
+    const isOT = data.isOvertime || (data.round > 5);
+    const roundNumEl = document.getElementById('roundNum');
+    if (roundNumEl) roundNumEl.textContent = isOT ? 'OT' : data.round;
+    const roundLabel = document.querySelector('.round-label');
+    if (roundLabel) roundLabel.innerHTML = isOT
+        ? '<span style="color:#ff9500;font-weight:700;letter-spacing:0.12em">⚡ OVERTIME</span>'
+        : `Round <span id="roundNum">${data.round}</span> / 5`;
     myMatchScore  = myPlayer === 1 ? data.p1Score : data.p2Score;
     oppMatchScore = myPlayer === 1 ? data.p2Score : data.p1Score;
     document.getElementById('p1Score').textContent  = myMatchScore;
@@ -1503,6 +1605,9 @@ function endMatch(data) {
     document.getElementById('resultOppScore').textContent = data.oppScore;
     const triggerBar = renderRankProgress(data.points, data.pointsDelta ?? 0);
     populateResultPlayers(data.points);
+    // Always show the action buttons, never the matchmaking indicator
+    document.getElementById('resultButtons')?.classList.remove('hidden');
+    document.getElementById('resultMatchmakingWrap')?.classList.add('hidden');
     showScreen('resultScreen');
     triggerBar();
 }
@@ -1611,6 +1716,7 @@ window.addEventListener('load', async () => {
     currentUser = userData;
     try { await initSignalR(); } catch {}
     showMenu();
+    startFriendBadgePolling();
 });
 
 // Small helpers
@@ -1958,6 +2064,14 @@ function renderProfileStats(data) {
         card.innerHTML = `<div class="pstat-value">${c.value}</div><div class="pstat-label">${c.label}</div>`;
         grid.appendChild(card);
     });
+
+    // Streak badge next to profile username
+    const profStreakBadge = document.getElementById('profileStreakBadge');
+    if (profStreakBadge) {
+        const streak = s.currentStreak ?? 0;
+        profStreakBadge.textContent = streak > 0 ? '🔥' + streak : '';
+        profStreakBadge.classList.toggle('hidden', streak === 0);
+    }
 
     const fgWrap = document.getElementById('profileFirstGuessWrap');
     const fgWord = document.getElementById('profileFirstGuess');
