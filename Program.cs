@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -12,6 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
     ?? builder.Configuration["JwtSecret"]
     ?? throw new InvalidOperationException("JWT_SECRET env var or JwtSecret config is required");
+
+// Write back into config so AuthService.GenerateToken uses the SAME secret as validation
+builder.Configuration["JwtSecret"] = jwtSecret;
 
 // SQLite path — DATA_PATH env var points to a persistent volume on Railway/Fly.io
 var dataPath  = Environment.GetEnvironmentVariable("DATA_PATH") ?? "";
@@ -105,6 +109,10 @@ using (var scope = app.Services.CreateScope())
         )");
 }
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 app.UseCors("All");
 app.UseAuthentication();
 app.UseAuthorization();

@@ -878,9 +878,9 @@ async function register() {
         if (!data.success) return showError(data.error);
         sessionStorage.setItem('token', data.token);
         currentUser = data.user;
-        await initSignalR();
+        try { await initSignalR(); } catch {}
         showMenu();
-    } catch { showError('Registration failed'); }
+    } catch (e) { showError('Registration failed'); }
 }
 
 async function login() {
@@ -890,12 +890,12 @@ async function login() {
     try {
         const res  = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username,password}) });
         const data = await res.json();
-        if (!data.success) return showError(data.error);
+        if (!data.success) return showError(data.error || 'Invalid credentials');
         sessionStorage.setItem('token', data.token);
         currentUser = data.user;
-        await initSignalR();
+        try { await initSignalR(); } catch {}
         showMenu();
-    } catch { showError('Login failed'); }
+    } catch (e) { showError('Login failed'); }
 }
 
 function logout() {
@@ -996,8 +996,8 @@ async function initSignalR() {
     try {
         await conn.start();
     } catch (err) {
-        showError('Connection failed. Please reload.');
-        throw err;
+        console.warn('SignalR start failed:', err);
+        // Don't throw — let login/register still proceed to showMenu()
     }
 }
 
@@ -1528,18 +1528,24 @@ window.addEventListener('load', async () => {
     applySettings(loadStoredSettings());
     const token = sessionStorage.getItem('token');
     if (!token) return showScreen('authScreen');
+
+    // Step 1: verify token — if this fails, log out
+    let userData = null;
     try {
         const res  = await fetch('/api/auth/verify', { headers:{ 'Authorization': 'Bearer ' + token } });
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error('verify failed');
         const data = await res.json();
-        if (!data.success) throw new Error();
-        currentUser = data.user;
-        await initSignalR();
-        showMenu();
+        if (!data.success) throw new Error('verify failed');
+        userData = data.user;
     } catch {
         sessionStorage.removeItem('token');
-        showScreen('authScreen');
+        return showScreen('authScreen');
     }
+
+    // Step 2: start SignalR — if this fails, still show menu (matchmaking will prompt to reload)
+    currentUser = userData;
+    try { await initSignalR(); } catch {}
+    showMenu();
 });
 
 // Small helpers
