@@ -115,7 +115,7 @@ html, body {
 }
 .site-title:hover { opacity: 0.72; }
 .title-wordle { color: #ffffff; }
-.title-battle  { color: #b8b8b8; }
+.title-battle  { color: #d0d0d0; }
 
 .screen {
     min-height: 100vh;
@@ -347,6 +347,17 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     flex-direction: column;
     gap: 2px;
 }
+.user-card-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.menu-streak-badge {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #ff9500;
+    line-height: 1;
+}
 
 .user-avatar {
     width: 72px;
@@ -385,7 +396,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     padding: 3px 0;
     border: none;
     color: var(--text-dim);
-    margin-bottom: 8px;
+    margin-bottom: 2px;
 }
 .menu-title-badge {
     font-size: 0.68rem;
@@ -516,7 +527,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 }
 .leaderboard-row {
     display: grid;
-    grid-template-columns: 16px 26px 1fr 46px 34px 20px 32px;
+    grid-template-columns: 16px 20px 26px 1fr 46px 34px 32px;
     align-items: center;
     gap: 4px;
     padding: 5px 10px;
@@ -530,7 +541,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 
 .leaderboard-header {
     display: grid;
-    grid-template-columns: 16px 26px 1fr 46px 34px 20px 32px;
+    grid-template-columns: 16px 20px 26px 1fr 46px 34px 32px;
     gap: 4px;
     padding: 4px 10px 6px;
     font-size: 0.6rem;
@@ -610,7 +621,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 .lb-wins {
     font-size: 0.72rem;
     font-weight: 700;
-    text-align: right;
+    text-align: center;
     font-variant-numeric: tabular-nums;
 }
 .lb-wr {
@@ -1319,6 +1330,8 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     align-items: center;
     justify-content: center;
 }
+/* Player profile modal floats above friends overlay */
+#playerProfileModal { z-index: 700; }
 
 .profile-backdrop {
     position: absolute;
