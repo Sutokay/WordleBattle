@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=19">
+    <link rel="stylesheet" href="css/style.css?v=20">
 </head>
 <body>
 
@@ -39,6 +39,7 @@
             <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
             <button onclick="login()">Login</button>
             <p class="link" onclick="showRegister()">No account? <strong>Register</strong></p>
+            <p class="link" style="margin-top:4px;font-size:0.78rem" onclick="openForgotPasswordModal()">Forgot password? <strong>Reset</strong></p>
         </div>
         <div id="registerForm" class="form-container hidden">
             <h2>Create account</h2>
@@ -470,6 +471,37 @@
     </div>
 </div>
 
-<script src="js/game.js?v=19"></script>
+<!-- Deleting account full-screen overlay -->
+<div id="deletingOverlay" class="deleting-overlay hidden">
+    <div class="deleting-content">
+        <div class="loader"></div>
+        <div class="deleting-text">Deleting account…</div>
+    </div>
+</div>
+
+<!-- Forgot password modal -->
+<div id="forgotPasswordModal" class="overlay-modal hidden">
+    <div class="overlay-backdrop" onclick="closeForgotPasswordModal()"></div>
+    <div class="overlay-panel" style="max-width:380px;gap:16px">
+        <button class="overlay-close-btn" onclick="closeForgotPasswordModal()">✕</button>
+        <h2 class="overlay-title">Reset Password</h2>
+        <div id="forgotPasswordForm">
+            <p style="color:var(--text-dim);font-size:0.85rem;line-height:1.5;margin-bottom:12px">Enter your username and email address. A temporary password will be generated for you to log in with.</p>
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <input id="forgotUsername" type="text"  placeholder="Username" autocomplete="off" />
+                <input id="forgotEmail"    type="email" placeholder="Email address" autocomplete="off" />
+                <button onclick="submitForgotPassword()">Reset Password</button>
+            </div>
+        </div>
+        <div id="forgotPasswordResult" class="hidden" style="text-align:center">
+            <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:10px">Your temporary password:</p>
+            <div id="forgotTempPassword" style="font-family:monospace;font-size:1.15rem;font-weight:700;color:var(--green);background:var(--surface2);padding:12px 20px;border-radius:8px;letter-spacing:0.12em;margin-bottom:12px;word-break:break-all"></div>
+            <p style="color:var(--text-muted);font-size:0.76rem;margin-bottom:14px">Log in with this password, then update it in Account settings.</p>
+            <button onclick="closeForgotPasswordModal()">Done</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/game.js?v=20"></script>
 </body>
 </html>

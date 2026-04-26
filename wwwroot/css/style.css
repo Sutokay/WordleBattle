@@ -658,6 +658,30 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     color: var(--text-muted);
 }
 
+/* Deleting account overlay */
+.deleting-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.deleting-overlay.hidden { display: none; }
+.deleting-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+}
+.deleting-text {
+    color: var(--text-dim);
+    font-size: 0.92rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
 /* Profile streak badge */
 .profile-username-row {
     display: flex;
@@ -2038,6 +2062,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 .result-player-info {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 2px;
     min-width: 0;
 }

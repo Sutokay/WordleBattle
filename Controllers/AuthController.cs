@@ -273,6 +273,32 @@ public class AuthController : ControllerBase
         return Ok(new { success = true });
     }
 
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest req)
+    {
+        var username = req.Username?.Trim() ?? "";
+        var email    = req.Email?.Trim()    ?? "";
+
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(email))
+            return BadRequest(new { error = "Username and email are required" });
+
+        var user = await _db.Users.FirstOrDefaultAsync(
+            u => u.Username == username && u.Email == email);
+
+        if (user == null)
+            return BadRequest(new { error = "No account found with that username and email" });
+
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        var rng = new Random();
+        var tempPassword = new string(
+            Enumerable.Range(0, 10).Select(_ => chars[rng.Next(chars.Length)]).ToArray());
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(tempPassword);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { success = true, tempPassword });
+    }
+
     [HttpGet("verify")]
     [Authorize]
     public async Task<IActionResult> Verify()

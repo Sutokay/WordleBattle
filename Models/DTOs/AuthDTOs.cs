@@ -36,3 +36,4 @@ public class UserData
 public class ChangePasswordRequest { public string CurrentPassword { get; set; } = ""; public string NewPassword { get; set; } = ""; }
 public class ChangeUsernameRequest { public string NewUsername { get; set; } = ""; }
 public class ChangeEmailRequest    { public string NewEmail    { get; set; } = ""; }
+public class ForgotPasswordRequest { public string Username { get; set; } = ""; public string Email { get; set; } = ""; }

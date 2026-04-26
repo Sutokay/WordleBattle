@@ -315,6 +315,35 @@ function submitDeleteAccount() {
 function closeDeleteModal() {
     document.getElementById('deleteAccountModal')?.classList.add('hidden');
 }
+
+// Forgot password modal
+function openForgotPasswordModal() {
+    document.getElementById('forgotPasswordModal').classList.remove('hidden');
+    document.getElementById('forgotPasswordForm').classList.remove('hidden');
+    document.getElementById('forgotPasswordResult').classList.add('hidden');
+    document.getElementById('forgotUsername').value = '';
+    document.getElementById('forgotEmail').value = '';
+}
+function closeForgotPasswordModal() {
+    document.getElementById('forgotPasswordModal').classList.add('hidden');
+}
+async function submitForgotPassword() {
+    const username = document.getElementById('forgotUsername').value.trim();
+    const email    = document.getElementById('forgotEmail').value.trim();
+    if (!username || !email) return showError('Please enter both username and email');
+    try {
+        const res  = await fetch('/api/auth/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email })
+        });
+        const data = await res.json();
+        if (!res.ok) return showError(data.error || 'No account found with those details');
+        document.getElementById('forgotTempPassword').textContent = data.tempPassword;
+        document.getElementById('forgotPasswordForm').classList.add('hidden');
+        document.getElementById('forgotPasswordResult').classList.remove('hidden');
+    } catch { showError('Request failed'); }
+}
 async function confirmDeleteAccount() {
     const btn = document.getElementById('confirmDeleteBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
@@ -331,7 +360,8 @@ async function confirmDeleteAccount() {
             return;
         }
         closeDeleteModal();
-        logout();
+        document.getElementById('deletingOverlay').classList.remove('hidden');
+        setTimeout(() => logout(), 1600);
     } catch {
         if (btn) { btn.disabled = false; btn.textContent = 'Delete'; }
         closeDeleteModal();
