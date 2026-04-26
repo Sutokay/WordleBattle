@@ -363,7 +363,10 @@ async function confirmDeleteAccount() {
         }
         closeDeleteModal();
         document.getElementById('deletingOverlay').classList.remove('hidden');
-        setTimeout(() => logout(), 1600);
+        setTimeout(() => {
+            document.getElementById('deletingOverlay').classList.add('hidden');
+            logout();
+        }, 1600);
     } catch {
         if (btn) { btn.disabled = false; btn.textContent = 'Delete'; }
         closeDeleteModal();
@@ -1021,10 +1024,13 @@ async function register() {
         const res  = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username,email,password}) });
         const data = await res.json();
         if (!data.success) return showError(data.error);
-        sessionStorage.setItem('token', data.token);
-        currentUser = data.user;
-        try { await initSignalR(); } catch {}
-        showMenu();
+        // Don't auto-login — redirect to login form with prefilled username
+        document.getElementById('regUsername').value = '';
+        document.getElementById('regEmail').value    = '';
+        document.getElementById('regPassword').value = '';
+        showLogin();
+        document.getElementById('loginUsername').value = username;
+        showSuccess('Account created! Please sign in.');
     } catch (e) { showError('Registration failed'); }
 }
 
