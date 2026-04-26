@@ -127,8 +127,8 @@ public class ProfileController : ControllerBase
         var user = await _db.Users.FindAsync(userId);
         if (user == null) return NotFound();
 
-        var profile  = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
-        var matches  = await _db.Matches
+        var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        var matches = await _db.Matches
             .Where(m => (m.Player1Id == userId || m.Player2Id == userId) && m.Status == "Completed")
             .ToListAsync();
 
@@ -136,9 +136,34 @@ public class ProfileController : ControllerBase
         int losses = matches.Count(m => m.WinnerId != null && m.WinnerId != userId);
         int total  = wins + losses;
 
-        var ordered  = matches.OrderByDescending(m => m.CompletedAt).ToList();
-        int streak   = 0;
+        var ordered = matches.OrderByDescending(m => m.CompletedAt).ToList();
+        int streak  = 0;
         foreach (var m in ordered) { if (m.WinnerId == userId) streak++; else break; }
+
+        int bestStreak = 0, tempStreak = 0;
+        foreach (var m in Enumerable.Reverse(ordered))
+        {
+            if (m.WinnerId == userId) { tempStreak++; if (tempStreak > bestStreak) bestStreak = tempStreak; }
+            else tempStreak = 0;
+        }
+
+        var guesses = await _db.GuessRecords.Where(g => g.UserId == userId).ToListAsync();
+        var correct = guesses.Where(g => g.IsCorrect).ToList();
+        double avgGuesses   = correct.Any() ? correct.Average(g => g.GuessNumber) : 0;
+        int fastestSolve    = correct.Any() ? correct.Min(g => g.GuessNumber) : 0;
+
+        var commonFirstGuess = guesses
+            .Where(g => g.GuessNumber == 1)
+            .GroupBy(g => g.Word)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (string?)g.Key)
+            .FirstOrDefault();
+
+        var favoriteWord = guesses
+            .GroupBy(g => g.Word)
+            .OrderByDescending(g => g.Count())
+            .Select(g => (string?)g.Key)
+            .FirstOrDefault();
 
         return Ok(new
         {
@@ -150,16 +175,28 @@ public class ProfileController : ControllerBase
             wins,
             losses,
             winRate   = total == 0 ? 0 : (int)Math.Round(wins * 100.0 / total),
-            streak,
             picture   = profile?.Picture,
             banner    = profile?.Banner,
             border    = profile?.Border ?? "default",
             title     = profile?.Title  ?? "",
-            bio       = profile?.Bio    ?? ""
+            bio       = profile?.Bio    ?? "",
+            stats     = new
+            {
+                wins,
+                losses,
+                points        = user.Points,
+                avgGuesses    = Math.Round(avgGuesses, 1),
+                fastestSolve,
+                currentStreak = streak,
+                bestStreak,
+                totalGuesses  = guesses.Count
+            },
+            commonFirstGuess,
+            favoriteWord
         });
     }
 
-    // ── GET /api/profile/find/{username}  (search by name, no auth) ──────────
+    // ── GET /api/profile/find/{username}  (exact search by name, no auth) ────
     [HttpGet("find/{username}")]
     [AllowAnonymous]
     public async Task<IActionResult> FindByUsername(string username)
@@ -167,6 +204,41 @@ public class ProfileController : ControllerBase
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
         if (user == null) return NotFound(new { error = "User not found" });
         return await GetPublicProfile(user.Id);
+    }
+
+    // ── GET /api/profile/search?q=xxx  (partial search, no auth) ─────────────
+    [HttpGet("search")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SearchUsers([FromQuery] string q)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+            return Ok(Array.Empty<object>());
+
+        var query = q.Trim().ToLower();
+        var users = await _db.Users
+            .Where(u => u.Username.ToLower().Contains(query))
+            .OrderBy(u => u.Username)
+            .Take(10)
+            .ToListAsync();
+
+        var results = new List<object>();
+        foreach (var user in users)
+        {
+            var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            results.Add(new
+            {
+                userId    = user.Id,
+                username  = user.Username,
+                rank      = user.GetRank(),
+                rankEmoji = user.GetRankEmoji(),
+                points    = user.Points,
+                picture   = profile?.Picture,
+                border    = profile?.Border ?? "default",
+                title     = profile?.Title  ?? ""
+            });
+        }
+
+        return Ok(results);
     }
 
     // ── PUT /api/profile/picture ──────────────────────────────────────────────

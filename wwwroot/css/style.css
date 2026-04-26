@@ -944,7 +944,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     font-size: 1.3rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    margin-bottom: 20px;
+    margin-bottom: 32px;
 }
 
 .result-score {
@@ -2369,6 +2369,23 @@ body.high-contrast .key[data-state="present"]  { background: #538fff; }
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-muted);
+}
+
+.pp-extra-stats {
+    padding: 14px 20px 0;
+}
+.pp-extra-stats .profile-words-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.pp-extra-stats .profile-firstguess,
+.pp-extra-stats .profile-favword {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 12px 16px;
+    flex: 1;
+    min-width: 120px;
 }
 
 @media (max-width: 680px) {

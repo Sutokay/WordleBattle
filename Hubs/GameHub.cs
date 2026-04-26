@@ -475,6 +475,14 @@ public class GameHub : Hub
             p2.Wins++;   p2.Points += winDelta;
             p1.Losses++; p1.Points  = Math.Max(0, p1.Points - lossDelta);
         }
+        else  // Draw — both players earn half the win amount
+        {
+            int drawDelta = Random.Shared.Next(50, 61);
+            p1Delta = drawDelta;
+            p2Delta = drawDelta;
+            p1.Points += drawDelta;
+            p2.Points += drawDelta;
+        }
 
         m.Player1PointsDelta = p1Delta;
         m.Player2PointsDelta = p2Delta;

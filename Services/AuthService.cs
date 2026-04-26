@@ -41,7 +41,7 @@ public class AuthService
         {
             Username = request.Username,
             Email = request.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 10)
         };
 
         _db.Users.Add(user);

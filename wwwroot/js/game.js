@@ -304,17 +304,34 @@ async function submitChangePassword() {
     } catch { showError('Request failed'); }
 }
 
-async function submitDeleteAccount() {
-    if (!confirm('Delete your account? This cannot be undone.')) return;
+function submitDeleteAccount() {
+    document.getElementById('deleteAccountModal')?.classList.remove('hidden');
+}
+function closeDeleteModal() {
+    document.getElementById('deleteAccountModal')?.classList.add('hidden');
+}
+async function confirmDeleteAccount() {
+    const btn = document.getElementById('confirmDeleteBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
     const token = sessionStorage.getItem('token');
     try {
         const res = await fetch('/api/auth/account', {
             method: 'DELETE',
             headers: { 'Authorization': 'Bearer ' + token }
         });
-        if (!res.ok) { showError('Failed to delete account'); return; }
+        if (!res.ok) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Delete'; }
+            closeDeleteModal();
+            showError('Failed to delete account');
+            return;
+        }
+        closeDeleteModal();
         logout();
-    } catch { showError('Request failed'); }
+    } catch {
+        if (btn) { btn.disabled = false; btn.textContent = 'Delete'; }
+        closeDeleteModal();
+        showError('Request failed');
+    }
 }
 
 // Settings modal
@@ -451,47 +468,61 @@ async function doFriendSearch(name) {
     resultsEl.classList.remove('hidden');
     const token = sessionStorage.getItem('token');
     try {
-        const res = await fetch(`/api/profile/find/${encodeURIComponent(name)}`,
+        const res = await fetch(`/api/profile/search?q=${encodeURIComponent(name)}`,
             { headers: token ? { 'Authorization': 'Bearer ' + token } : {} });
         if (!res.ok) {
-            resultsEl.innerHTML = '<div class="friend-search-empty">No player found</div>';
+            resultsEl.innerHTML = '<div class="friend-search-empty">Search failed</div>';
             return;
         }
-        const d = await res.json();
-        const isSelf = currentUser && d.userId === currentUser.id;
-        let friendStatus = 'none';
-        let fshipId = null;
-        if (!isSelf && token) {
-            try {
-                const sr = await fetch(`/api/friends/status/${d.userId}`,
-                    { headers: { 'Authorization': 'Bearer ' + token } });
-                if (sr.ok) { const sd = await sr.json(); friendStatus = sd.status; fshipId = sd.friendshipId; }
-            } catch {}
+        const users = await res.json();
+        if (!users.length) {
+            resultsEl.innerHTML = '<div class="friend-search-empty">No players found</div>';
+            return;
         }
 
-        let btnHtml = '';
-        if (!isSelf) {
-            if (friendStatus === 'friends')
-                btnHtml = '<button class="friend-search-btn" disabled>✓ Friends</button>';
-            else if (friendStatus === 'pending_sent')
-                btnHtml = '<button class="friend-search-btn" disabled>Sent ✓</button>';
-            else if (friendStatus === 'pending_received')
-                btnHtml = `<button class="friend-search-btn" onclick="event.stopPropagation();searchAcceptRequest(${fshipId},this)">Accept</button>`;
-            else
-                btnHtml = `<button class="friend-search-btn" onclick="event.stopPropagation();searchAddFriend('${escHtml(d.username)}',this)">Add Friend</button>`;
+        // Fetch friendship statuses in parallel
+        const statusMap = {};
+        if (token) {
+            await Promise.all(users.map(async d => {
+                if (currentUser && d.userId === currentUser.id) return;
+                try {
+                    const sr = await fetch(`/api/friends/status/${d.userId}`,
+                        { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (sr.ok) { const sd = await sr.json(); statusMap[d.userId] = sd; }
+                } catch {}
+            }));
         }
 
-        const picStyle = d.picture ? `background-image:url(${d.picture});background-size:cover;background-position:center` : '';
-        const ini = escHtml(d.username.charAt(0).toUpperCase());
-        resultsEl.innerHTML = `
-            <div class="friend-search-result-item" onclick="openPlayerProfile(${d.userId})">
-                <div class="friend-search-result-avatar" style="${picStyle}">${d.picture ? '' : ini}</div>
-                <div class="friend-search-result-info">
-                    <div class="friend-search-result-name">${escHtml(d.username)}</div>
-                    <div class="friend-search-result-rank">${rankIconHTMLFromName(d.rank, 13)} ${escHtml(d.rank)} · ${d.points} pts</div>
-                </div>
-                ${btnHtml}
-            </div>`;
+        resultsEl.innerHTML = users.map(d => {
+            const isSelf = currentUser && d.userId === currentUser.id;
+            const sd = statusMap[d.userId] || {};
+            const friendStatus = sd.status || 'none';
+            const fshipId = sd.friendshipId || null;
+
+            let btnHtml = '';
+            if (!isSelf) {
+                if (friendStatus === 'friends')
+                    btnHtml = '<button class="friend-search-btn" disabled>✓ Friends</button>';
+                else if (friendStatus === 'pending_sent')
+                    btnHtml = '<button class="friend-search-btn" disabled>Sent ✓</button>';
+                else if (friendStatus === 'pending_received')
+                    btnHtml = `<button class="friend-search-btn" onclick="event.stopPropagation();searchAcceptRequest(${fshipId},this)">Accept</button>`;
+                else
+                    btnHtml = `<button class="friend-search-btn" onclick="event.stopPropagation();searchAddFriend('${escHtml(d.username)}',this)">Add Friend</button>`;
+            }
+
+            const picStyle = d.picture ? `background-image:url(${d.picture});background-size:cover;background-position:center` : '';
+            const ini = escHtml(d.username.charAt(0).toUpperCase());
+            return `
+                <div class="friend-search-result-item" onclick="openPlayerProfile(${d.userId})">
+                    <div class="friend-search-result-avatar" style="${picStyle}">${d.picture ? '' : ini}</div>
+                    <div class="friend-search-result-info">
+                        <div class="friend-search-result-name">${escHtml(d.username)}</div>
+                        <div class="friend-search-result-rank">${rankIconHTMLFromName(d.rank, 13)} ${escHtml(d.rank)} · ${d.points} pts</div>
+                    </div>
+                    ${btnHtml}
+                </div>`;
+        }).join('');
     } catch {
         resultsEl.innerHTML = '<div class="friend-search-empty">Search failed</div>';
     }
@@ -582,6 +613,9 @@ async function openPlayerProfile(userId) {
     document.getElementById('ppActions').innerHTML    = '';
     document.getElementById('ppStatGrid').innerHTML   = '';
     document.getElementById('ppBanner').style.backgroundImage = '';
+    document.getElementById('ppExtraStats')?.classList.add('hidden');
+    document.getElementById('ppFirstGuessWrap')?.classList.add('hidden');
+    document.getElementById('ppFavWordWrap')?.classList.add('hidden');
 
     try {
         const res  = await fetch(`/api/profile/${userId}`);
@@ -661,17 +695,40 @@ async function openPlayerProfile(userId) {
             }
         }
 
-        // Stats grid
+        // Stats grid — full stats matching own profile
+        const s = d.stats || {};
+        const winsN   = Number(d.wins)   || 0;
+        const lossesN = Number(d.losses) || 0;
+        const totalM  = winsN + lossesN;
         const stats = [
-            { label: 'Points',   value: d.points    ?? '—' },
-            { label: 'Wins',     value: d.wins      ?? '—' },
-            { label: 'Losses',   value: d.losses    ?? '—' },
-            { label: 'Win Rate', value: d.winRate != null ? d.winRate + '%' : '—' },
+            { label: 'Wins',          value: winsN },
+            { label: 'Losses',        value: lossesN },
+            { label: 'Win Rate',      value: totalM > 0 ? Math.round(winsN * 100 / totalM) + '%' : '0%' },
+            { label: 'Points',        value: d.points ?? 0 },
+            { label: 'Avg Guesses',   value: s.avgGuesses > 0 ? Number(s.avgGuesses).toFixed(1) : '—' },
+            { label: 'Fastest Solve', value: s.fastestSolve > 0 ? String(s.fastestSolve) : '—' },
+            { label: 'Streak',        value: s.currentStreak ?? 0 },
+            { label: 'Best Streak',   value: s.bestStreak    ?? 0 },
         ];
         const grid = document.getElementById('ppStatGrid');
-        grid.innerHTML = stats.map(s =>
-            `<div class="pp-stat"><div class="pp-stat-value">${s.value}</div><div class="pp-stat-label">${s.label}</div></div>`
+        grid.innerHTML = stats.map(st =>
+            `<div class="pp-stat"><div class="pp-stat-value">${st.value}</div><div class="pp-stat-label">${st.label}</div></div>`
         ).join('');
+
+        // Common first guess + favourite word
+        const ppFgWrap = document.getElementById('ppFirstGuessWrap');
+        const ppFgWord = document.getElementById('ppFirstGuess');
+        if (ppFgWrap && ppFgWord) {
+            ppFgWord.textContent = d.commonFirstGuess ? d.commonFirstGuess.toUpperCase() : 'No data';
+            ppFgWrap.classList.remove('hidden');
+        }
+        const ppFavWrap = document.getElementById('ppFavWordWrap');
+        const ppFavWord = document.getElementById('ppFavWord');
+        if (ppFavWrap && ppFavWord) {
+            ppFavWord.textContent = d.favoriteWord ? d.favoriteWord.toUpperCase() : 'No data';
+            ppFavWrap.classList.remove('hidden');
+        }
+        document.getElementById('ppExtraStats')?.classList.remove('hidden');
     } catch {
         document.getElementById('ppUsername').textContent = 'Failed to load';
     }
@@ -1878,7 +1935,7 @@ function renderProfileStats(data) {
         { label: 'Win Rate',      value: total > 0 ? Math.round(winsN * 100 / total) + '%' : '0%' },
         { label: 'Points',        value: Number(s.points) || 0 },
         { label: 'Avg Guesses',   value: s.avgGuesses > 0 ? Number(s.avgGuesses).toFixed(1) : '—' },
-        { label: 'Fastest Solve', value: s.fastestSolve > 0 ? s.fastestSolve + ' guess' + (s.fastestSolve > 1 ? 'es' : '') : '—' },
+        { label: 'Fastest Solve', value: s.fastestSolve > 0 ? String(s.fastestSolve) : '—' },
         { label: 'Streak',        value: s.currentStreak ?? 0 },
         { label: 'Best Streak',   value: s.bestStreak    ?? 0 },
     ];

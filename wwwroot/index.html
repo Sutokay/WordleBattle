@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=14">
+    <link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
 
@@ -399,6 +399,19 @@
 
 <div id="toast" class="toast hidden"></div>
 
+<!-- Delete account confirmation modal -->
+<div id="deleteAccountModal" class="overlay-modal hidden">
+    <div class="overlay-backdrop" onclick="closeDeleteModal()"></div>
+    <div class="overlay-panel" style="max-width:380px;text-align:center;gap:18px">
+        <h2 style="font-family:var(--font-serif);font-size:1.15rem;letter-spacing:0.06em;text-transform:uppercase;color:var(--red)">Delete Account</h2>
+        <p style="color:var(--text-dim);font-size:0.88rem;line-height:1.5">This will permanently delete your account, stats, and all game history. This <strong>cannot</strong> be undone.</p>
+        <div style="display:flex;gap:10px;margin-top:4px">
+            <button class="btn-secondary" style="flex:1" onclick="closeDeleteModal()">Cancel</button>
+            <button id="confirmDeleteBtn" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:0 16px;height:44px;font-weight:700;cursor:pointer" onclick="confirmDeleteAccount()">Delete</button>
+        </div>
+    </div>
+</div>
+
 <div id="playerProfileModal" class="overlay-modal hidden">
     <div class="overlay-backdrop" onclick="closePlayerProfile()"></div>
     <div class="overlay-panel overlay-panel-wide pp-panel">
@@ -415,9 +428,21 @@
         </div>
         <div class="pp-actions" id="ppActions"></div>
         <div class="pp-stat-grid" id="ppStatGrid"></div>
+        <div id="ppExtraStats" class="hidden pp-extra-stats">
+            <div class="profile-words-row">
+                <div class="profile-firstguess hidden" id="ppFirstGuessWrap">
+                    <span class="extra-stat-label">Most Common First Guess</span>
+                    <span class="firstguess-word" id="ppFirstGuess"></span>
+                </div>
+                <div class="profile-favword hidden" id="ppFavWordWrap">
+                    <span class="extra-stat-label">Favourite Word</span>
+                    <span class="firstguess-word" id="ppFavWord"></span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<script src="js/game.js?v=14"></script>
+<script src="js/game.js?v=15"></script>
 </body>
 </html>
