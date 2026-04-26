@@ -19,7 +19,6 @@ let _inQueue = false;
 let _opponentProfile = null;
 let _opponentName    = '';
 
-// Capitalize first letter of a name for display (never alters stored value)
 function capName(n) { return n ? n.charAt(0).toUpperCase() + n.slice(1) : n; }
 
 // Rank system
@@ -546,17 +545,16 @@ async function doFriendSearch(name) {
             resultsEl.innerHTML = '<div class="friend-search-empty">Search failed</div>';
             return;
         }
-        const users = await res.json();
+        const allUsers = await res.json();
+        const users = allUsers.filter(d => !currentUser || d.userId !== currentUser.id);
         if (!users.length) {
             resultsEl.innerHTML = '<div class="friend-search-empty">No players found</div>';
             return;
         }
 
-        // Fetch friendship statuses in parallel
         const statusMap = {};
         if (token) {
             await Promise.all(users.map(async d => {
-                if (currentUser && d.userId === currentUser.id) return;
                 try {
                     const sr = await fetch(`/api/friends/status/${d.userId}`,
                         { headers: { 'Authorization': 'Bearer ' + token } });
@@ -566,22 +564,19 @@ async function doFriendSearch(name) {
         }
 
         resultsEl.innerHTML = users.map(d => {
-            const isSelf = currentUser && d.userId === currentUser.id;
             const sd = statusMap[d.userId] || {};
             const friendStatus = sd.status || 'none';
             const fshipId = sd.friendshipId || null;
 
             let btnHtml = '';
-            if (!isSelf) {
-                if (friendStatus === 'friends')
-                    btnHtml = '<button class="friend-search-btn" disabled>✓ Friends</button>';
-                else if (friendStatus === 'pending_sent')
-                    btnHtml = '<button class="friend-search-btn" disabled>Sent ✓</button>';
-                else if (friendStatus === 'pending_received')
-                    btnHtml = `<button class="friend-search-btn" onclick="event.stopPropagation();searchAcceptRequest(${fshipId},this)">Accept</button>`;
-                else
-                    btnHtml = `<button class="friend-search-btn" onclick="event.stopPropagation();searchAddFriend('${escHtml(d.username)}',this)">Add Friend</button>`;
-            }
+            if (friendStatus === 'friends')
+                btnHtml = '<button class="friend-search-btn" disabled>✓ Friends</button>';
+            else if (friendStatus === 'pending_sent')
+                btnHtml = '<button class="friend-search-btn" disabled>Sent ✓</button>';
+            else if (friendStatus === 'pending_received')
+                btnHtml = `<button class="friend-search-btn" onclick="event.stopPropagation();searchAcceptRequest(${fshipId},this)">Accept</button>`;
+            else
+                btnHtml = `<button class="friend-search-btn" onclick="event.stopPropagation();searchAddFriend('${escHtml(d.username)}',this)">Add Friend</button>`;
 
             const picStyle = d.picture ? `background-image:url(${d.picture});background-size:cover;background-position:center` : '';
             const ini = escHtml(d.username.charAt(0).toUpperCase());
@@ -711,7 +706,6 @@ async function openPlayerProfile(userId) {
 }
 
 async function _applyPlayerProfileData(d) {
-    // Banner
     const banner = document.getElementById('ppBanner');
     if (d.banner) {
         banner.style.backgroundImage    = `url(${d.banner})`;
@@ -721,7 +715,6 @@ async function _applyPlayerProfileData(d) {
         banner.style.backgroundImage = '';
     }
 
-    // Avatar
     const av = document.getElementById('ppAvatar');
     av.textContent = '';
     if (d.picture) {
@@ -738,7 +731,6 @@ async function _applyPlayerProfileData(d) {
     if (bDef.cls) av.classList.add(bDef.cls);
     else av.style.borderColor = bDef.color || '#3a3a3c';
 
-    // Info
     document.getElementById('ppUsername').textContent = capName(d.username);
     const ppStreak = document.getElementById('ppStreakBadge');
     if (ppStreak) {
@@ -761,7 +753,6 @@ async function _applyPlayerProfileData(d) {
     }
     document.getElementById('ppBio').textContent = d.bio || '';
 
-    // Actions — always fetch fresh friendship status
     const actions = document.getElementById('ppActions');
     actions.innerHTML = '';
     if (currentUser && d.userId !== currentUser.id) {
@@ -791,7 +782,6 @@ async function _applyPlayerProfileData(d) {
         }
     }
 
-    // Stats grid
     const s = d.stats || {};
     const winsN = Number(d.wins) || 0, lossesN = Number(d.losses) || 0, totalM = winsN + lossesN;
     const stats = [
@@ -808,7 +798,6 @@ async function _applyPlayerProfileData(d) {
         `<div class="pstat-card"><div class="pstat-value">${st.value}</div><div class="pstat-label">${st.label}</div></div>`
     ).join('');
 
-    // First guess + favourite word
     const ppFgWrap = document.getElementById('ppFirstGuessWrap');
     const ppFgWord = document.getElementById('ppFirstGuess');
     if (ppFgWrap && ppFgWord) { ppFgWord.textContent = d.commonFirstGuess ? d.commonFirstGuess.toUpperCase() : 'No data'; ppFgWrap.classList.remove('hidden'); }
@@ -847,7 +836,6 @@ function applyUserToMenu() {
     const pts = currentUser.points || 0;
     const rankEl = document.getElementById('menuRank');
     rankEl.innerHTML = rankIconHTMLFromPts(pts, 16) + ' ' + escHtml(r);
-    // Always-visible rank + score display under Find Game button
     const qRank = getRank(pts);
     const qRankEl = document.getElementById('menuQueueRank');
     if (qRankEl) {
@@ -880,7 +868,6 @@ async function fetchRecentMatches() {
             row.className = 'recent-match-row';
             const cls = m.outcome === 'WIN' ? 'win' : m.outcome === 'LOSS' ? 'loss' : 'draw';
 
-            // Opponent avatar
             const av = makeSmallAvatar(m.opponentName, m.opponentPicture, m.opponentBorder, 26);
             row.appendChild(av);
 
@@ -894,13 +881,11 @@ async function fetchRecentMatches() {
             oppEl.textContent = capName(m.opponentName);
             row.appendChild(oppEl);
 
-            // Round score (e.g. 2–1)
             const scoreEl = document.createElement('span');
             scoreEl.className = 'rm-score';
             scoreEl.textContent = `${m.myScore}–${m.oppScore}`;
             row.appendChild(scoreEl);
 
-            // Points delta
             const delta = m.pointsDelta ?? 0;
             const deltaEl = document.createElement('span');
             deltaEl.className = 'rm-delta' + (delta > 0 ? ' gain' : delta < 0 ? ' loss' : ' draw');
@@ -967,8 +952,7 @@ async function fetchLeaderboard() {
                 ? ` <span class="lb-streak">🔥${p.streak}</span>`
                 : '';
 
-            // Column order: pos | rank-icon | avatar | name | pts | wins | wr
-            row.insertBefore(cell('lb-rank-icon', icon), av);
+                    row.insertBefore(cell('lb-rank-icon', icon), av);
             row.insertBefore(cell(`lb-pos${posClass}`, p.position), av.previousSibling);
             row.appendChild(cell('lb-name', escHtml(capName(p.username)) + streakHtml));
             row.appendChild(cell('lb-pts', p.points));
@@ -991,7 +975,6 @@ function showMenu() {
     if (findBtn)       { findBtn.textContent = 'Find Game'; findBtn.onclick = playGame; }
     if (matchmakingEl) { matchmakingEl.classList.add('hidden'); }
 
-    // Close settings dropdown if open
     document.getElementById('settingsDropdown')?.classList.add('hidden');
     document.getElementById('settingsBtn')?.classList.remove('open');
 
@@ -1007,7 +990,7 @@ function showMenu() {
     fetch('/api/auth/verify', { headers: { 'Authorization': 'Bearer ' + token } })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
-            if (!data || !data.success || !data.user) return;
+            if (!data?.success || !data.user) return;
             currentUser = data.user;
             if (!document.getElementById('menuScreen').classList.contains('hidden'))
                 applyUserToMenu();
@@ -1025,8 +1008,7 @@ async function register() {
         const res  = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({username,email,password}) });
         const data = await res.json();
         if (!data.success) return showError(data.error);
-        // Don't auto-login — redirect to login form with prefilled username
-        document.getElementById('regUsername').value = '';
+            document.getElementById('regUsername').value = '';
         document.getElementById('regEmail').value    = '';
         document.getElementById('regPassword').value = '';
         showLogin();
@@ -1091,7 +1073,6 @@ async function initSignalR() {
         const matchmakingEl = document.getElementById('menuMatchmaking');
         if (findBtn)       { findBtn.textContent = 'Find Game'; findBtn.onclick = playGame; }
         if (matchmakingEl) { matchmakingEl.classList.add('hidden'); }
-        // Reset result screen matchmaking if applicable
         document.getElementById('resultButtons')?.classList.remove('hidden');
         document.getElementById('resultMatchmakingWrap')?.classList.add('hidden');
 
@@ -1154,20 +1135,15 @@ async function initSignalR() {
 
     try {
         await conn.start();
-    } catch (err) {
-        console.warn('SignalR start failed:', err);
-        // Don't throw — let login/register still proceed to showMenu()
-    }
+    } catch {}
 }
 
-// Public profile fetch
 async function fetchPublicProfile(userId) {
     const res = await fetch(`/api/profile/${userId}`);
     if (!res.ok) return null;
     return await res.json();
 }
 
-// In-game player panel population
 function populateGamePanels(p1Name, p2Name) {
     const myPanelNum  = myPlayer;
     const oppPanelNum = myPlayer === 1 ? 2 : 1;
@@ -1206,7 +1182,6 @@ function populateGamePanels(p1Name, p2Name) {
         }
     }
 
-    // Streak badge for my panel
     const myStreakEl = document.getElementById(`p${myPanelNum}Streak`);
     if (myStreakEl) {
         const myStreak = userProfile?.stats?.currentStreak ?? 0;
@@ -1257,7 +1232,6 @@ function populateGamePanels(p1Name, p2Name) {
         }
     }
 
-    // Streak badge for opponent panel
     const oppStreakEl = document.getElementById(`p${oppPanelNum}Streak`);
     if (oppStreakEl) {
         const oppStreak = _opponentProfile?.stats?.currentStreak ?? 0;
@@ -1310,10 +1284,8 @@ async function playGame() {
     if (matchmakingEl) matchmakingEl.classList.remove('hidden');
     startQueueTimer();
 
-    // Show matchmaking state on result screen if that's where we are
     const resultButtons     = document.getElementById('resultButtons');
     const resultMatchmaking = document.getElementById('resultMatchmakingWrap');
-    const playAgainBtn      = document.getElementById('playAgainBtn');
     const onResultScreen    = !document.getElementById('resultScreen').classList.contains('hidden');
     if (onResultScreen) {
         if (resultButtons)     resultButtons.classList.add('hidden');
@@ -1342,7 +1314,6 @@ async function cancelQueue() {
     const matchmakingEl = document.getElementById('menuMatchmaking');
     if (findBtn)       { findBtn.textContent = 'Find Game'; findBtn.onclick = playGame; }
     if (matchmakingEl) { matchmakingEl.classList.add('hidden'); }
-    // Reset result screen matchmaking state
     const resultButtons     = document.getElementById('resultButtons');
     const resultMatchmaking = document.getElementById('resultMatchmakingWrap');
     if (resultButtons)     resultButtons.classList.remove('hidden');
@@ -1379,7 +1350,6 @@ function startRound(data) {
         ? '<span style="color:#ff9500;font-weight:700;letter-spacing:0.12em">⚡ OVERTIME</span>'
         : `Round <span id="roundNum">${data.round}</span> / 5`;
 
-    // Show overtime popup on first OT round only
     if (isOT && data.round === 6) showOvertimePopup();
     myMatchScore  = myPlayer === 1 ? data.p1Score : data.p2Score;
     oppMatchScore = myPlayer === 1 ? data.p2Score : data.p1Score;
@@ -1659,7 +1629,6 @@ function endMatch(data) {
     document.getElementById('resultOppScore').textContent = data.oppScore;
     const triggerBar = renderRankProgress(data.points, data.pointsDelta ?? 0);
     populateResultPlayers(data.points);
-    // Always show the action buttons, never the matchmaking indicator
     document.getElementById('resultButtons')?.classList.remove('hidden');
     document.getElementById('resultMatchmakingWrap')?.classList.add('hidden');
     showScreen('resultScreen');
@@ -1726,7 +1695,6 @@ function populateResultPlayers(myPoints) {
     }
 }
 
-// Physical keyboard
 document.addEventListener('keydown', e => {
     if (document.getElementById('gameScreen').classList.contains('hidden')) return;
     if (!roundActive || myRoundDone) return;
@@ -1747,29 +1715,24 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// Session restore on page load
 window.addEventListener('load', async () => {
-    // Hide header by default until we know user is logged in
-    const hdr = document.getElementById('siteHeader');
-    if (hdr) hdr.classList.add('hidden');
+    document.getElementById('siteHeader')?.classList.add('hidden');
     applySettings(loadStoredSettings());
     const token = sessionStorage.getItem('token');
     if (!token) return showScreen('authScreen');
 
-    // Step 1: verify token — if this fails, log out
     let userData = null;
     try {
         const res  = await fetch('/api/auth/verify', { headers:{ 'Authorization': 'Bearer ' + token } });
-        if (!res.ok) throw new Error('verify failed');
+        if (!res.ok) throw new Error();
         const data = await res.json();
-        if (!data.success) throw new Error('verify failed');
+        if (!data.success) throw new Error();
         userData = data.user;
     } catch {
         sessionStorage.removeItem('token');
         return showScreen('authScreen');
     }
 
-    // Step 2: start SignalR — if this fails, still show menu (matchmaking will prompt to reload)
     currentUser = userData;
     try { await initSignalR(); } catch {}
     showMenu();
@@ -1807,7 +1770,6 @@ let userProfile = null;
 // Border definitions
 const BORDERS = [
     { id:'default',     label:'Default',     cls:null,                       color:'#3a3a3c', req:null },
-    // Rank-gated
     { id:'bronze',      label:'Bronze',      cls:'avatar-border-bronze',     color:'#CD7F32', req:{ type:'points', value:0,    display:'Reach Bronze rank'      } },
     { id:'silver',      label:'Silver',      cls:'avatar-border-silver',     color:'#C0C0C0', req:{ type:'points', value:1000, display:'Reach Silver (1000 pts)' } },
     { id:'gold',        label:'Gold',        cls:'avatar-border-gold',       color:'#FFD700', req:{ type:'points', value:2000, display:'Reach Gold (2000 pts)'   } },
@@ -1817,7 +1779,6 @@ const BORDERS = [
     { id:'master',      label:'Master',      cls:'avatar-border-master',     color:'#C77DFF', req:{ type:'points', value:6000, display:'Reach Master (6000 pts)'  } },
     { id:'grandmaster', label:'Grandmaster', cls:'avatar-border-grandmaster',color:'#FF79C6', req:{ type:'points', value:7000, display:'Reach Grandmaster (7000 pts)'} },
     { id:'lexicongod',  label:'Lexicon God', cls:'avatar-border-lexicongod', color:'#FFD700', req:{ type:'points', value:8000, display:'Reach Lexicon God (8000 pts)'} },
-    // Achievement-gated
     { id:'neon',        label:'Neon',        cls:'avatar-border-neon',       color:'#06d6a0', req:{ type:'wins', value:10,  display:'Win 10 matches'    } },
     { id:'rainbow',     label:'Rainbow',     cls:'avatar-border-rainbow',    color:'#ff9900', req:{ type:'wins', value:25,  display:'Win 25 matches'    } },
     { id:'veteran',     label:'Veteran',     cls:'avatar-border-veteran',    color:'#B5838D', req:{ type:'wins', value:50,  display:'Win 50 matches'    } },
@@ -2083,7 +2044,6 @@ async function loadProfileData() {
         const profAvEl = document.getElementById('profileAvatarEl');
         if (profAvEl) applyBorderToAvatar(profAvEl, data.border || 'default');
 
-        // Sync modal banner
         const modalBanner = document.getElementById('profileModalBanner');
         if (modalBanner) {
             if (data.banner) {
@@ -2096,7 +2056,6 @@ async function loadProfileData() {
         }
         updateMenuBanner();
 
-        // Sync bio textarea
         const bioEl = document.getElementById('profileBio');
         if (bioEl) bioEl.value = data.bio || '';
 
@@ -2136,7 +2095,6 @@ function renderProfileStats(data) {
         grid.appendChild(card);
     });
 
-    // Streak badge next to profile username
     const profStreakBadge = document.getElementById('profileStreakBadge');
     if (profStreakBadge) {
         const streak = s.currentStreak ?? 0;
@@ -2182,13 +2140,13 @@ function renderBorderPicker(activeBorderId) {
 
         const circle = document.createElement('div');
         circle.className = 'border-swatch-circle';
-                if (b.cls) {
+        if (b.cls) {
             circle.classList.add(b.cls);
         } else {
             circle.style.borderColor = b.color || '#3a3a3c';
         }
 
-                if (b.req?.type === 'points' && b.id !== 'default') {
+        if (b.req?.type === 'points' && b.id !== 'default') {
             const slug = b.id === 'lexicongod' ? 'lexicon-god' : b.id;
             const img = document.createElement('img');
             img.src = `/img/ranks/${slug}.png`;
@@ -2204,7 +2162,7 @@ function renderBorderPicker(activeBorderId) {
         el.appendChild(circle);
         el.appendChild(label);
 
-                if (b.req?.display) {
+        if (b.req?.display) {
             const req = document.createElement('div');
             req.className   = 'border-swatch-req' + (unlocked ? ' unlocked' : '');
             req.textContent = (unlocked ? '' : '\uD83D\uDD12 ') + b.req.display;

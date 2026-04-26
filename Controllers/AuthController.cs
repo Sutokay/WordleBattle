@@ -250,8 +250,6 @@ public class AuthController : ControllerBase
         var user = await _db.Users.FindAsync(userId);
         if (user == null) return Unauthorized();
 
-        // Explicitly delete all related data to avoid FK constraint violations
-        // (Matches/Rounds are not set up with CASCADE in EF Core model)
         await _db.Database.ExecuteSqlInterpolatedAsync(
             $"DELETE FROM GuessRecords WHERE UserId = {userId}");
         await _db.Database.ExecuteSqlInterpolatedAsync(

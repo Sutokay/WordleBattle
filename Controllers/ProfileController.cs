@@ -21,7 +21,6 @@ public class ProfileController : ControllerBase
         return int.TryParse(s, out var id) ? id : 0;
     }
 
-    // ── GET /api/profile  (own profile, authorised) ───────────────────────────
     [HttpGet]
     public async Task<IActionResult> GetProfile()
     {
@@ -119,7 +118,6 @@ public class ProfileController : ControllerBase
         });
     }
 
-    // ── GET /api/profile/{userId}  (public — no auth required) ───────────────
     [HttpGet("{userId:int}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetPublicProfile(int userId)
@@ -196,7 +194,6 @@ public class ProfileController : ControllerBase
         });
     }
 
-    // ── GET /api/profile/find/{username}  (exact search by name, no auth) ────
     [HttpGet("find/{username}")]
     [AllowAnonymous]
     public async Task<IActionResult> FindByUsername(string username)
@@ -206,7 +203,6 @@ public class ProfileController : ControllerBase
         return await GetPublicProfile(user.Id);
     }
 
-    // ── GET /api/profile/search?q=xxx  (partial search, no auth) ─────────────
     [HttpGet("search")]
     [AllowAnonymous]
     public async Task<IActionResult> SearchUsers([FromQuery] string q)
@@ -241,7 +237,6 @@ public class ProfileController : ControllerBase
         return Ok(results);
     }
 
-    // ── PUT /api/profile/picture ──────────────────────────────────────────────
     [HttpPut("picture")]
     public async Task<IActionResult> UpdatePicture([FromBody] PictureRequest req)
     {
@@ -263,7 +258,6 @@ public class ProfileController : ControllerBase
         return Ok(new { success = true });
     }
 
-    // ── PUT /api/profile/bio ──────────────────────────────────────────────────
     [HttpPut("bio")]
     public async Task<IActionResult> UpdateBio([FromBody] BioRequest req)
     {
@@ -285,7 +279,6 @@ public class ProfileController : ControllerBase
         return Ok(new { success = true });
     }
 
-    // ── PUT /api/profile/customization ────────────────────────────────────────
     [HttpPut("customization")]
     public async Task<IActionResult> UpdateCustomization([FromBody] CustomizationRequest req)
     {
