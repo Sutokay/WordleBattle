@@ -149,6 +149,8 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
+    const header = document.getElementById('siteHeader');
+    if (header) header.classList.toggle('hidden', id === 'authScreen');
 }
 
 function showLogin()    { document.getElementById('loginForm').classList.remove('hidden'); document.getElementById('registerForm').classList.add('hidden'); }
@@ -1346,6 +1348,16 @@ function hideRoundModal() {
     document.getElementById('roundEndModal').classList.add('hidden');
 }
 
+function showOvertimePopup() {
+    const popup = document.getElementById('overtimePopup');
+    if (!popup) return;
+    popup.classList.remove('hidden', 'fading');
+    setTimeout(() => {
+        popup.classList.add('fading');
+        popup.addEventListener('animationend', () => popup.classList.add('hidden'), { once: true });
+    }, 2200);
+}
+
 function startRound(data) {
     if (!matchId) return;
 
@@ -1359,6 +1371,9 @@ function startRound(data) {
     if (roundLabel) roundLabel.innerHTML = isOT
         ? '<span style="color:#ff9500;font-weight:700;letter-spacing:0.12em">⚡ OVERTIME</span>'
         : `Round <span id="roundNum">${data.round}</span> / 5`;
+
+    // Show overtime popup on first OT round only
+    if (isOT && data.round === 6) showOvertimePopup();
     myMatchScore  = myPlayer === 1 ? data.p1Score : data.p2Score;
     oppMatchScore = myPlayer === 1 ? data.p2Score : data.p1Score;
     document.getElementById('p1Score').textContent  = myMatchScore;
@@ -1727,6 +1742,9 @@ document.addEventListener('keydown', e => {
 
 // Session restore on page load
 window.addEventListener('load', async () => {
+    // Hide header by default until we know user is logged in
+    const hdr = document.getElementById('siteHeader');
+    if (hdr) hdr.classList.add('hidden');
     applySettings(loadStoredSettings());
     const token = sessionStorage.getItem('token');
     if (!token) return showScreen('authScreen');

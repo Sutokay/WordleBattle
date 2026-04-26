@@ -115,7 +115,7 @@ html, body {
 }
 .site-title:hover { opacity: 0.72; }
 .title-wordle { color: #ffffff; }
-.title-battle  { color: #d0d0d0; }
+.title-battle  { color: #aaaaaa; }
 
 .screen {
     min-height: 100vh;
@@ -1198,6 +1198,64 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 @keyframes modal-content-in {
     from { transform: scale(0.94) translateY(-10px); opacity: 0; }
     to   { transform: scale(1)    translateY(0);     opacity: 1; }
+}
+
+/* Overtime popup */
+.overtime-popup {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    pointer-events: none;
+    animation: ot-fade-in 0.25s ease;
+}
+.overtime-popup.hidden { display: none; }
+@keyframes ot-fade-in {
+    from { opacity: 0; transform: scale(0.88); }
+    to   { opacity: 1; transform: scale(1); }
+}
+@keyframes ot-fade-out {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(1.06); }
+}
+.overtime-popup.fading {
+    animation: ot-fade-out 0.35s ease forwards;
+}
+.overtime-popup-inner {
+    background: linear-gradient(135deg, #1a0800 0%, #2d1200 100%);
+    border: 2px solid #ff6000;
+    border-radius: 16px;
+    padding: 28px 52px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(255, 96, 0, 0.45), 0 8px 32px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.overtime-fire-row {
+    font-size: 2rem;
+    line-height: 1;
+    letter-spacing: 6px;
+    margin-bottom: 2px;
+}
+.overtime-label {
+    font-family: var(--font-serif);
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #ff7b1a;
+    text-shadow: 0 0 18px rgba(255, 120, 0, 0.7);
+}
+.overtime-sub {
+    font-size: 0.72rem;
+    color: #ff9c55;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-top: 2px;
 }
 
 .round-end-result {

@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=20">
+    <link rel="stylesheet" href="css/style.css?v=21">
 </head>
 <body>
 
-<header class="site-header">
+<header class="site-header" id="siteHeader">
     <span class="site-title" onclick="onTitleClick()"><span class="title-wordle">Wordle</span><span class="title-battle">Battle</span></span>
     <div class="header-settings-wrap" id="headerSettingsWrap">
         <button class="header-friend-btn hidden" id="headerFriendBtn" onclick="openFriendsModal()" title="Friend requests">
@@ -30,7 +30,7 @@
 </header>
 
 <div id="authScreen" class="screen hidden">
-    <div class="auth-title">WordleBattle</div>
+    <div class="auth-title"><span class="title-wordle">Wordle</span><span class="title-battle">Battle</span></div>
     <div class="auth-subtitle">1 vs 1 · Real-time · Ranked</div>
     <div class="auth-card">
         <div id="loginForm" class="form-container">
@@ -471,6 +471,15 @@
     </div>
 </div>
 
+<!-- Overtime popup -->
+<div id="overtimePopup" class="overtime-popup hidden">
+    <div class="overtime-popup-inner">
+        <div class="overtime-fire-row">🔥🔥🔥</div>
+        <div class="overtime-label">Overtime</div>
+        <div class="overtime-sub">First correct guess wins</div>
+    </div>
+</div>
+
 <!-- Deleting account full-screen overlay -->
 <div id="deletingOverlay" class="deleting-overlay hidden">
     <div class="deleting-content">
@@ -502,6 +511,6 @@
     </div>
 </div>
 
-<script src="js/game.js?v=20"></script>
+<script src="js/game.js?v=21"></script>
 </body>
 </html>
