@@ -233,6 +233,24 @@ public class AuthController : ControllerBase
         var user = await _db.Users.FindAsync(userId);
         if (user == null) return Unauthorized();
 
+        // Explicitly delete all related data to avoid FK constraint violations
+        // (Matches/Rounds are not set up with CASCADE in EF Core model)
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM GuessRecords WHERE UserId = {userId}");
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM Friendships WHERE RequesterId = {userId} OR ReceiverId = {userId}");
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM UserProfiles WHERE UserId = {userId}");
+        await _db.Database.ExecuteSqlInterpolatedAsync($@"
+            DELETE FROM GuessRecords WHERE RoundId IN
+            (SELECT Id FROM Rounds WHERE MatchId IN
+            (SELECT Id FROM Matches WHERE Player1Id = {userId} OR Player2Id = {userId}))");
+        await _db.Database.ExecuteSqlInterpolatedAsync($@"
+            DELETE FROM Rounds WHERE MatchId IN
+            (SELECT Id FROM Matches WHERE Player1Id = {userId} OR Player2Id = {userId})");
+        await _db.Database.ExecuteSqlInterpolatedAsync(
+            $"DELETE FROM Matches WHERE Player1Id = {userId} OR Player2Id = {userId}");
+
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();
         return Ok(new { success = true });

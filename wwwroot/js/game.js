@@ -19,6 +19,9 @@ let _inQueue = false;
 let _opponentProfile = null;
 let _opponentName    = '';
 
+// Capitalize first letter of a name for display (never alters stored value)
+function capName(n) { return n ? n.charAt(0).toUpperCase() + n.slice(1) : n; }
+
 // Rank system
 const RANKS = [
     { name: 'Bronze',      emoji: '🥉', min: 0,    max: 1000, color: '#CD7F32' },
@@ -234,7 +237,7 @@ document.addEventListener('click', e => {
 function openAccountModal() {
     closeDropdown();
     if (!currentUser) return;
-    document.getElementById('acctUsername').textContent = currentUser.username;
+    document.getElementById('acctUsername').textContent = capName(currentUser.username);
     document.getElementById('acctEmail').textContent    = currentUser.email;
     document.getElementById('acctNewUsername').value = '';
     document.getElementById('acctNewEmail').value    = '';
@@ -259,8 +262,8 @@ async function submitChangeUsername() {
         const data = await res.json();
         if (!res.ok) { showError(data.error || 'Failed'); return; }
         currentUser.username = data.username;
-        document.getElementById('acctUsername').textContent = currentUser.username;
-        document.getElementById('menuUsername').textContent = currentUser.username;
+        document.getElementById('acctUsername').textContent = capName(currentUser.username);
+        document.getElementById('menuUsername').textContent = capName(currentUser.username);
         document.getElementById('acctNewUsername').value = '';
         showSuccess('Username updated!');
     } catch { showError('Request failed'); }
@@ -440,7 +443,7 @@ function friendItemHTML(f, mode) {
     return `<div class="friend-item" id="fi-${f.friendshipId}">
         <div class="friend-avatar" style="${avStyle}"${f.userId ? ` onclick="openPlayerProfile(${f.userId})"` : ''}>${pic ? '' : initial}</div>
         <div class="friend-info"${profileClick}>
-            <div class="friend-name">${escHtml(f.username)}</div>
+            <div class="friend-name">${escHtml(capName(f.username))}</div>
             <div class="friend-rank">${rankIconHTMLFromName(f.rank, 14)} ${escHtml(f.rank)}</div>
         </div>
         <div class="friend-actions">${btnHtml}</div>
@@ -517,7 +520,7 @@ async function doFriendSearch(name) {
                 <div class="friend-search-result-item" onclick="openPlayerProfile(${d.userId})">
                     <div class="friend-search-result-avatar" style="${picStyle}">${d.picture ? '' : ini}</div>
                     <div class="friend-search-result-info">
-                        <div class="friend-search-result-name">${escHtml(d.username)}</div>
+                        <div class="friend-search-result-name">${escHtml(capName(d.username))}</div>
                         <div class="friend-search-result-rank">${rankIconHTMLFromName(d.rank, 13)} ${escHtml(d.rank)} · ${d.points} pts</div>
                     </div>
                     ${btnHtml}
@@ -639,7 +642,7 @@ async function openPlayerProfile(userId) {
             av.style.backgroundPosition = 'center';
         } else {
             av.style.backgroundImage = '';
-            av.textContent = escHtml(d.username.charAt(0).toUpperCase());
+            av.textContent = d.username.charAt(0).toUpperCase();
         }
         BORDERS.forEach(b => { if (b.cls) av.classList.remove(b.cls); });
         av.style.borderColor = ''; av.style.boxShadow = '';
@@ -648,7 +651,7 @@ async function openPlayerProfile(userId) {
         else av.style.borderColor = bDef.color || '#3a3a3c';
 
         // Info
-        document.getElementById('ppUsername').textContent = d.username;
+        document.getElementById('ppUsername').textContent = capName(d.username);
         document.getElementById('ppRank').innerHTML =
             rankIconHTMLFromName(d.rank, 16) + ' ' + escHtml(d.rank);
 
@@ -712,7 +715,7 @@ async function openPlayerProfile(userId) {
         ];
         const grid = document.getElementById('ppStatGrid');
         grid.innerHTML = stats.map(st =>
-            `<div class="pp-stat"><div class="pp-stat-value">${st.value}</div><div class="pp-stat-label">${st.label}</div></div>`
+            `<div class="pstat-card"><div class="pstat-value">${st.value}</div><div class="pstat-label">${st.label}</div></div>`
         ).join('');
 
         // Common first guess + favourite word
@@ -758,7 +761,7 @@ async function ppAddFriend(username) {
 
 // Menu
 function applyUserToMenu() {
-    document.getElementById('menuUsername').textContent = currentUser.username;
+    document.getElementById('menuUsername').textContent = capName(currentUser.username);
     const r   = currentUser.rank || '';
     const pts = currentUser.points || 0;
     const rankEl = document.getElementById('menuRank');
@@ -806,7 +809,7 @@ async function fetchRecentMatches() {
 
             const oppEl = document.createElement('span');
             oppEl.className = 'rm-opp';
-            oppEl.textContent = m.opponentName;
+            oppEl.textContent = capName(m.opponentName);
             row.appendChild(oppEl);
 
             // Round score (e.g. 2–1)
@@ -879,7 +882,7 @@ async function fetchLeaderboard() {
             };
 
             row.insertBefore(cell(`lb-pos${posClass}`, p.position), av);
-            row.appendChild(cell('lb-name', escHtml(p.username)));
+            row.appendChild(cell('lb-name', escHtml(capName(p.username))));
             row.appendChild(cell('lb-pts', p.points));
             row.appendChild(cell('lb-rank-icon', icon));
             row.appendChild(cell('lb-wr', p.winRate + '%'));
@@ -995,12 +998,12 @@ async function initSignalR() {
         if (findBtn)       { findBtn.textContent = 'Find Game'; findBtn.onclick = playGame; }
         if (matchmakingEl) { matchmakingEl.classList.add('hidden'); }
 
-        const myName  = currentUser.username;
+        const myName  = capName(currentUser.username);
         const oppName = data.opponent;
         _opponentName = oppName;
 
-        document.getElementById('p1Name').textContent  = myPlayer === 1 ? myName  : oppName;
-        document.getElementById('p2Name').textContent  = myPlayer === 1 ? oppName : myName;
+        document.getElementById('p1Name').textContent  = myPlayer === 1 ? myName  : capName(oppName);
+        document.getElementById('p2Name').textContent  = myPlayer === 1 ? capName(oppName) : myName;
         document.getElementById('p1Score').textContent = '0';
         document.getElementById('p2Score').textContent = '0';
         document.getElementById('roundNum').textContent = '?';
@@ -1514,7 +1517,7 @@ function populateResultPlayers(myPoints) {
         applyBorderToAvatar(myAv, userProfile?.border || 'default');
     }
     const myNameEl = document.getElementById('resultMyName');
-    if (myNameEl) myNameEl.textContent = currentUser?.username || '';
+    if (myNameEl) myNameEl.textContent = capName(currentUser?.username || '');
 
     const myRankEl = document.getElementById('resultMyRank');
     if (myRankEl) {
@@ -1543,7 +1546,7 @@ function populateResultPlayers(myPoints) {
         applyBorderToAvatar(oppAv, _opponentProfile?.border || 'default');
     }
     const oppNameEl = document.getElementById('resultOppName');
-    if (oppNameEl) oppNameEl.textContent = _opponentName || 'Opponent';
+    if (oppNameEl) oppNameEl.textContent = capName(_opponentName || 'Opponent');
 
     const oppRankEl = document.getElementById('resultOppRank');
     if (oppRankEl) {

@@ -602,7 +602,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     font-size: 0.58rem;
     font-weight: 700;
     letter-spacing: 0.06em;
-    width: 26px;
+    min-width: 36px;
     flex-shrink: 0;
 }
 .rm-outcome.win  { color: var(--green); }
@@ -944,7 +944,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     font-size: 1.3rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    margin-bottom: 32px;
+    margin-bottom: 20px;
 }
 
 .result-score {
@@ -2173,10 +2173,12 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 .friend-search-result-rank { font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
 .friend-search-btn {
     flex-shrink: 0;
+    width: auto;
     padding: 6px 14px;
     font-size: 0.78rem;
     border-radius: 6px;
     height: auto;
+    letter-spacing: 0.06em;
 }
 .friend-search-btn:disabled { opacity: 0.55; cursor: default; }
 .friends-tabs {
@@ -2346,6 +2348,7 @@ body.high-contrast .key[data-state="present"]  { background: #538fff; }
 .pp-stat-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
+    padding: 0 20px;
     gap: 1px;
     background: var(--border-dim);
     border-top: 1px solid var(--border-dim);

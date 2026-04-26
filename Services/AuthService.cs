@@ -25,6 +25,15 @@ public class AuthService
         if (string.IsNullOrWhiteSpace(request.Username) || request.Username.Length < 3 || request.Username.Length > 20)
             return new AuthResponse { Success = false, Error = "Username must be 3-20 characters" };
 
+        // No more than 3 consecutive identical letters (e.g. "oooo" is banned, "ooo" is ok)
+        for (int i = 0; i <= request.Username.Length - 4; i++)
+        {
+            if (request.Username[i] == request.Username[i + 1] &&
+                request.Username[i + 1] == request.Username[i + 2] &&
+                request.Username[i + 2] == request.Username[i + 3])
+                return new AuthResponse { Success = false, Error = "No more than 3 of the same letter in a row" };
+        }
+
         if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
             return new AuthResponse { Success = false, Error = "Invalid email" };
 
