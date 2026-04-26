@@ -211,7 +211,7 @@ public class ProfileController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> SearchUsers([FromQuery] string q)
     {
-        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 1)
             return Ok(Array.Empty<object>());
 
         var query = q.Trim().ToLower();

@@ -362,6 +362,7 @@ async function confirmDeleteAccount() {
             return;
         }
         closeDeleteModal();
+        closeAccountModal();
         document.getElementById('deletingOverlay').classList.remove('hidden');
         setTimeout(() => {
             document.getElementById('deletingOverlay').classList.add('hidden');
