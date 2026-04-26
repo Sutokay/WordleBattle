@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordleBattle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <link rel="stylesheet" href="css/style.css?v=14">
+</head>
+<body>
+
+<header class="site-header">
+    <span class="site-title" onclick="onTitleClick()">WordleBattle</span>
+    <div class="header-settings-wrap" id="headerSettingsWrap">
+        <button class="header-hamburger" id="settingsBtn" onclick="toggleSettings()" title="Menu" aria-label="Settings">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="menu-settings-dropdown hidden" id="settingsDropdown">
+            <div class="settings-item" onclick="openAccountModal()">Account</div>
+            <div class="settings-item" onclick="openSettingsModal()">Settings</div>
+            <div class="settings-item" onclick="openFriendsModal()">Friends</div>
+        </div>
+    </div>
+</header>
+
+<div id="authScreen" class="screen hidden">
+    <div class="auth-title">WordleBattle</div>
+    <div class="auth-subtitle">1 vs 1 · Real-time · Ranked</div>
+    <div class="auth-card">
+        <div id="loginForm" class="form-container">
+            <h2>Sign in</h2>
+            <input id="loginUsername" type="text"     placeholder="Username" autocomplete="username" />
+            <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
+            <button onclick="login()">Login</button>
+            <p class="link" onclick="showRegister()">No account? <strong>Register</strong></p>
+        </div>
+        <div id="registerForm" class="form-container hidden">
+            <h2>Create account</h2>
+            <input id="regUsername" type="text"     placeholder="Username (3–20 chars)" autocomplete="username" />
+            <input id="regEmail"    type="email"    placeholder="Email" autocomplete="email" />
+            <input id="regPassword" type="password" placeholder="Password (min 6 chars)" autocomplete="new-password" />
+            <button onclick="register()">Register</button>
+            <p class="link" onclick="showLogin()">Have an account? <strong>Login</strong></p>
+        </div>
+    </div>
+</div>
+
+<div id="menuScreen" class="screen hidden">
+    <div class="menu-layout">
+
+        <div class="menu-left-panel">
+            <div class="user-card">
+                <div class="user-card-banner" id="menuBanner" onclick="triggerBannerUpload(event)" title="Click to change banner">
+                    <div class="user-card-banner-overlay">Change Banner</div>
+                </div>
+                <div class="user-card-body" onclick="openProfile()" title="View profile">
+                    <div class="user-card-avatar-slot">
+                        <div class="user-avatar" id="menuAvatar">?</div>
+                    </div>
+                    <div class="user-card-meta">
+                        <div class="username" id="menuUsername">Player</div>
+                        <span class="rank-badge" id="menuRank"></span>
+                        <div class="menu-title-badge hidden" id="menuTitleBadge"></div>
+                    </div>
+                </div>
+            </div>
+            <input type="file" id="bannerPicInput" accept="image/*" style="display:none" onchange="handleBannerUpload(event)">
+            <button onclick="logout()" class="btn-secondary">Logout</button>
+        </div>
+
+        <div class="menu-center">
+            <button id="findGameBtn" onclick="playGame()">Find Game</button>
+            <div id="menuQueueRank" class="menu-queue-rank">
+                <span id="menuQueueRankIcon"></span>
+                <span id="menuQueueRankName"></span>
+                <span class="menu-queue-pts">(<span id="menuQueuePts"></span>)</span>
+            </div>
+            <div id="menuMatchmaking" class="menu-matchmaking hidden">
+                <div class="loader"></div>
+                <div id="menuQueueTimer" class="menu-queue-timer">0:00</div>
+                <div class="menu-queue-status">Searching for opponent…</div>
+            </div>
+        </div>
+
+        <div class="menu-right-panel">
+            <div class="leaderboard-panel">
+                <div class="leaderboard-title">Leaderboard</div>
+                <div id="leaderboardList" class="leaderboard-list">
+                    <div class="lb-loading">Loading…</div>
+                </div>
+            </div>
+            <div class="recent-matches-panel">
+                <div class="recent-matches-title">Recent Matches</div>
+                <div id="recentMatchesList" class="recent-matches-list">
+                    <div class="lb-loading">Loading…</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="matchedScreen" class="screen hidden">
+    <div class="matched-box">
+        <div class="matched-label">Matched!</div>
+        <div class="matched-vs">vs</div>
+        <div class="matched-opponent">
+            <div class="matched-rank-icon" id="matchedOpponentRank"></div>
+            <span class="matched-name" id="matchedOpponentName"></span>
+        </div>
+        <div class="matched-sub">Get ready…</div>
+    </div>
+</div>
+
+<div id="gameScreen" class="screen hidden">
+    <div class="game-header">
+        <div class="game-player-panel" id="p1Panel">
+            <div class="game-player-avatar" id="p1Avatar"></div>
+            <div class="game-player-meta">
+                <div class="game-player-name" id="p1Name">You</div>
+                <div class="game-player-rank" id="p1Rank"></div>
+                <div class="game-player-title hidden" id="p1Title"></div>
+            </div>
+            <div class="score" id="p1Score">0</div>
+        </div>
+
+        <div class="round-info">
+            <div class="round-label">Round <span id="roundNum">—</span> / 5</div>
+            <div class="timer" id="timer">60</div>
+        </div>
+
+        <div class="game-player-panel right" id="p2Panel">
+            <div class="score" id="p2Score">0</div>
+            <div class="game-player-meta right">
+                <div class="game-player-name" id="p2Name">Opponent</div>
+                <div class="game-player-rank" id="p2Rank"></div>
+                <div class="game-player-title hidden" id="p2Title"></div>
+            </div>
+            <div class="game-player-avatar" id="p2Avatar"></div>
+        </div>
+    </div>
+
+    <div class="game-boards">
+        <div class="main-board-col">
+            <div class="board-label">Your board</div>
+            <div id="myBoard" class="board"></div>
+            <div class="keyboard" id="keyboard"></div>
+        </div>
+        <div class="opp-board-col">
+            <div class="board-label">Opponent</div>
+            <div id="oppBoard" class="board mini"></div>
+        </div>
+    </div>
+</div>
+
+<div id="resultScreen" class="screen hidden">
+    <div class="result-box">
+        <h1 id="resultTitle">Result</h1>
+        <div class="result-players-row">
+            <div class="result-player-card" id="resultMyCard">
+                <div class="result-player-avatar" id="resultMyAvatar"></div>
+                <div class="result-player-info">
+                    <div class="result-player-name" id="resultMyName"></div>
+                    <div class="result-player-rank" id="resultMyRank"></div>
+                    <div class="result-player-title hidden" id="resultMyTitle"></div>
+                </div>
+            </div>
+            <div class="result-score">
+                <div class="result-num" id="resultMyScore">0</div>
+                <div class="result-vs">–</div>
+                <div class="result-num" id="resultOppScore">0</div>
+            </div>
+            <div class="result-player-card right" id="resultOppCard">
+                <div class="result-player-avatar" id="resultOppAvatar"></div>
+                <div class="result-player-info right">
+                    <div class="result-player-name" id="resultOppName"></div>
+                    <div class="result-player-rank" id="resultOppRank"></div>
+                    <div class="result-player-title hidden" id="resultOppTitle"></div>
+                </div>
+            </div>
+        </div>
+        <div class="rank-progress">
+            <div class="rank-progress-top">
+                <span class="rank-progress-label">Rank Progress</span>
+                <span id="resultProgressPct" class="rank-progress-pct">0%</span>
+            </div>
+            <div class="rank-bar-row">
+                <div class="rank-bar-side" id="resultCurrentRank"></div>
+                <div class="rank-bar-outer">
+                    <div class="rank-bar-fill"  id="resultBarFill"></div>
+                    <div class="rank-bar-delta" id="resultBarDelta"></div>
+                    <span class="rank-bar-label" id="resultBarDeltaText"></span>
+                </div>
+                <div class="rank-bar-side right" id="resultNextRank"></div>
+            </div>
+        </div>
+        <div class="result-buttons">
+            <button onclick="showMenu()" class="btn-secondary">Menu</button>
+            <button onclick="playGame()">Play Again</button>
+        </div>
+    </div>
+</div>
+
+<div id="roundEndModal" class="round-modal hidden">
+    <div class="round-modal-inner">
+        <div class="round-end-result" id="roundEndResult"></div>
+        <div class="round-end-word-label">The word was</div>
+        <div class="round-end-word" id="roundEndWord"></div>
+        <div class="round-end-sub" id="roundEndSub">Next round starting…</div>
+    </div>
+</div>
+
+<div id="profileModal" class="profile-modal hidden">
+    <div class="profile-backdrop" onclick="closeProfile()"></div>
+    <div class="profile-panel">
+        <button class="profile-close-btn" onclick="closeProfile()">✕</button>
+
+        <div class="profile-modal-banner" id="profileModalBanner" onclick="triggerBannerUpload(event)" title="Click to change banner">
+            <div class="profile-modal-banner-overlay">Change Banner</div>
+        </div>
+
+        <div class="profile-header">
+            <div class="profile-avatar-wrap" onclick="triggerPicUpload()" title="Change photo">
+                <div class="profile-avatar" id="profileAvatarEl"></div>
+                <div class="profile-avatar-hover">Change Photo</div>
+            </div>
+            <input type="file" id="profilePicInput" accept="image/*" style="display:none" onchange="handlePicUpload(event)">
+            <div class="profile-header-info">
+                <div class="profile-username" id="profileUsername"></div>
+                <div class="profile-rank-badge" id="profileRankBadge"></div>
+                <div class="profile-title-badge hidden" id="profileTitleBadge"></div>
+                <div class="profile-bio-wrap">
+                    <textarea id="profileBio" class="profile-bio-input"
+                              placeholder="Write something about yourself…"
+                              maxlength="100"
+                              oninput="onBioInput(this)"
+                              onblur="saveBio(this.value)"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-tabs">
+            <button class="profile-tab active" onclick="openProfileTab('stats', this)">Overview</button>
+            <button class="profile-tab"        onclick="openProfileTab('borders', this)">Avatar Borders</button>
+            <button class="profile-tab"        onclick="openProfileTab('titles', this)">Titles</button>
+        </div>
+
+        <div id="profileTabStats" class="profile-tab-pane">
+            <div class="profile-stat-grid" id="profileStatGrid">
+                <div class="lb-loading">Loading…</div>
+            </div>
+            <div id="profileExtraStats" class="profile-extra-stats hidden">
+                <div class="profile-words-row" id="profileWordsWrap">
+                    <div class="profile-firstguess hidden" id="profileFirstGuessWrap">
+                        <span class="extra-stat-label">Most Common First Guess</span>
+                        <span class="firstguess-word" id="profileFirstGuess"></span>
+                    </div>
+                    <div class="profile-favword hidden" id="profileFavWordWrap">
+                        <span class="extra-stat-label">Favorite Word</span>
+                        <span class="firstguess-word" id="profileFavWord"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="profileTabBorders" class="profile-tab-pane hidden">
+            <div class="border-grid" id="borderGrid"></div>
+        </div>
+
+        <div id="profileTabTitles" class="profile-tab-pane hidden">
+            <div class="title-list" id="titleList"></div>
+        </div>
+
+    </div>
+</div>
+
+<div id="accountModal" class="overlay-modal hidden">
+    <div class="overlay-backdrop" onclick="closeAccountModal()"></div>
+    <div class="overlay-panel">
+        <button class="overlay-close-btn" onclick="closeAccountModal()">✕</button>
+        <h2 class="overlay-title">Account</h2>
+
+        <div class="account-section">
+            <div class="account-section-label">Current Account</div>
+            <div class="account-current-info">
+                <div class="account-info-row"><span class="account-info-label">Username</span><span id="acctUsername" class="account-info-value"></span></div>
+                <div class="account-info-row"><span class="account-info-label">Email</span><span id="acctEmail" class="account-info-value"></span></div>
+            </div>
+        </div>
+
+        <div class="account-section">
+            <div class="account-section-label">Change Username</div>
+            <div class="account-form">
+                <input id="acctNewUsername" type="text" placeholder="New username (3–20 chars)" autocomplete="off" />
+                <button onclick="submitChangeUsername()">Update Username</button>
+            </div>
+        </div>
+
+        <div class="account-section">
+            <div class="account-section-label">Change Email</div>
+            <div class="account-form">
+                <input id="acctNewEmail" type="email" placeholder="New email address" autocomplete="off" />
+                <button onclick="submitChangeEmail()">Update Email</button>
+            </div>
+        </div>
+
+        <div class="account-section">
+            <div class="account-section-label">Change Password</div>
+            <div class="account-form">
+                <input id="acctCurrentPw" type="password" placeholder="Current password" autocomplete="current-password" />
+                <input id="acctNewPw"     type="password" placeholder="New password (min 6 chars)" autocomplete="new-password" />
+                <button onclick="submitChangePassword()">Update Password</button>
+            </div>
+        </div>
+
+        <div class="account-section account-danger-zone">
+            <div class="account-section-label">Danger Zone</div>
+            <button class="btn-danger" onclick="submitDeleteAccount()">Delete Account</button>
+        </div>
+    </div>
+</div>
+
+<div id="settingsModal" class="overlay-modal hidden">
+    <div class="overlay-backdrop" onclick="closeSettingsModal()"></div>
+    <div class="overlay-panel">
+        <button class="overlay-close-btn" onclick="closeSettingsModal()">✕</button>
+        <h2 class="overlay-title">Settings</h2>
+
+        <div class="setting-row">
+            <div class="setting-label-wrap">
+                <div class="setting-label">Colorblind Mode</div>
+                <div class="setting-desc">Uses orange &amp; blue instead of green &amp; yellow</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="settingColorblind" onchange="onSettingChange()">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+        </div>
+
+        <div class="setting-row">
+            <div class="setting-label-wrap">
+                <div class="setting-label">Hard Mode</div>
+                <div class="setting-desc">Revealed hints must be used in subsequent guesses</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="settingHardMode" onchange="onSettingChange()">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+        </div>
+
+        <div class="setting-row">
+            <div class="setting-label-wrap">
+                <div class="setting-label">High Contrast</div>
+                <div class="setting-desc">Improves tile color distinction</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="settingHighContrast" onchange="onSettingChange()">
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+        </div>
+
+    </div>
+</div>
+
+<div id="friendsModal" class="overlay-modal hidden">
+    <div class="overlay-backdrop" onclick="closeFriendsModal()"></div>
+    <div class="overlay-panel overlay-panel-wide">
+        <button class="overlay-close-btn" onclick="closeFriendsModal()">✕</button>
+        <h2 class="overlay-title">Friends</h2>
+
+        <div class="friends-search-wrap">
+            <input id="friendSearchInput" class="friends-search-input" type="text"
+                   placeholder="Search players…" autocomplete="off"
+                   oninput="debounceFriendSearch(this.value)"
+                   onkeydown="if(event.key==='Enter') triggerFriendSearch()" />
+        </div>
+        <div id="friendSearchResults" class="friend-search-results hidden"></div>
+
+        <div class="friends-tabs">
+            <button class="friends-tab active" id="friendsTabFriendsBtn" onclick="switchFriendsTab('friends', this)">Friends</button>
+            <button class="friends-tab"        id="friendsTabRequestsBtn" onclick="switchFriendsTab('requests', this)">Requests <span id="friendRequestsBadge" class="friends-badge hidden">0</span></button>
+        </div>
+
+        <div id="friendsTabFriends" class="friends-tab-pane">
+            <div id="friendsList" class="friends-list">
+                <div class="lb-loading">Loading…</div>
+            </div>
+        </div>
+
+        <div id="friendsTabRequests" class="friends-tab-pane hidden">
+            <div id="requestsList" class="friends-list">
+                <div class="lb-loading">Loading…</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<div id="playerProfileModal" class="overlay-modal hidden">
+    <div class="overlay-backdrop" onclick="closePlayerProfile()"></div>
+    <div class="overlay-panel overlay-panel-wide pp-panel">
+        <button class="overlay-close-btn" onclick="closePlayerProfile()">✕</button>
+        <div class="pp-banner" id="ppBanner"></div>
+        <div class="pp-avatar-wrap">
+            <div class="pp-avatar" id="ppAvatar"></div>
+        </div>
+        <div class="pp-body">
+            <div class="pp-username" id="ppUsername"></div>
+            <div class="pp-rank"     id="ppRank"></div>
+            <div class="pp-title"    id="ppTitle"></div>
+            <div class="pp-bio"      id="ppBio"></div>
+        </div>
+        <div class="pp-actions" id="ppActions"></div>
+        <div class="pp-stat-grid" id="ppStatGrid"></div>
+    </div>
+</div>
+
+<script src="js/game.js?v=14"></script>
+</body>
+</html>

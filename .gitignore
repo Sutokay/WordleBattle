@@ -1,0 +1,26 @@
+## Build output
+bin/
+obj/
+
+## SQLite database — never commit the live database
+*.db
+*.db-shm
+*.db-wal
+
+## User secrets & local config
+appsettings.Development.json
+secrets.json
+.env
+.env.*
+
+## IDE
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## OS
+.DS_Store
+Thumbs.db
