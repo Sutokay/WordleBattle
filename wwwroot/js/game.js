@@ -611,7 +611,8 @@ async function openPlayerProfile(userId) {
 
     document.getElementById('ppUsername').textContent = '…';
     document.getElementById('ppRank').innerHTML       = '';
-    document.getElementById('ppTitle').textContent    = '';
+    const _ppTitleReset = document.getElementById('ppTitle');
+    if (_ppTitleReset) { _ppTitleReset.textContent = ''; _ppTitleReset.className = 'profile-title-badge hidden'; }
     document.getElementById('ppBio').textContent      = '';
     document.getElementById('ppActions').innerHTML    = '';
     document.getElementById('ppStatGrid').innerHTML   = '';
@@ -657,9 +658,13 @@ async function openPlayerProfile(userId) {
 
         const titleDef = TITLES.find(t => t.id === d.title);
         const ppTitle  = document.getElementById('ppTitle');
-        ppTitle.textContent = (titleDef && d.title) ? titleDef.label : '';
         if (titleDef && d.title) {
-            ppTitle.className = 'pp-title' + (titleDef.tier ? ' tier-' + titleDef.tier : '');
+            ppTitle.textContent = titleDef.label;
+            ppTitle.className = 'profile-title-badge' + (titleDef.tier ? ' tier-' + titleDef.tier : '');
+            ppTitle.classList.remove('hidden');
+        } else {
+            ppTitle.textContent = '';
+            ppTitle.className = 'profile-title-badge hidden';
         }
 
         document.getElementById('ppBio').textContent = d.bio || '';
@@ -1806,9 +1811,10 @@ function updateMenuTitleBadge() {
     const def     = titleId ? TITLES.find(t => t.id === titleId) : null;
     if (def && titleId) {
         badge.textContent = def.label;
+        badge.className = 'menu-title-badge' + (def.tier ? ' tier-' + def.tier : '');
         badge.classList.remove('hidden');
     } else {
-        badge.classList.add('hidden');
+        badge.className = 'menu-title-badge hidden';
     }
 }
 
@@ -1818,7 +1824,7 @@ function openProfile() {
     const modal = document.getElementById('profileModal');
     if (!modal) return;
 
-    document.getElementById('profileUsername').textContent = currentUser.username;
+    document.getElementById('profileUsername').textContent = capName(currentUser.username);
     const r   = getRank(currentUser.points || 0);
     document.getElementById('profileRankBadge').innerHTML =
         rankIconHTML(r.name, r.emoji, 16) + ' ' + escHtml(r.name);
@@ -1828,9 +1834,10 @@ function openProfile() {
     const titleDef = TITLES.find(t => t.id === activeTitleId);
     if (titleDef && activeTitleId) {
         titleBadge.textContent = titleDef.label;
+        titleBadge.className = 'profile-title-badge' + (titleDef.tier ? ' tier-' + titleDef.tier : '');
         titleBadge.classList.remove('hidden');
     } else {
-        titleBadge.classList.add('hidden');
+        titleBadge.className = 'profile-title-badge hidden';
     }
 
     const profAvEl = document.getElementById('profileAvatarEl');
@@ -1841,7 +1848,7 @@ function openProfile() {
         profAvEl.textContent              = '';
     } else {
         profAvEl.style.backgroundImage = '';
-        profAvEl.textContent = currentUser.username.substring(0, 2).toUpperCase();
+        profAvEl.textContent = currentUser.username.charAt(0).toUpperCase();
     }
     applyBorderToAvatar(profAvEl, userProfile ? userProfile.border : 'default');
 
@@ -2079,9 +2086,10 @@ async function selectTitle(titleId) {
         const def = TITLES.find(t => t.id === titleId);
         if (def && titleId) {
             titleBadge.textContent = def.label;
+            titleBadge.className = 'profile-title-badge' + (def.tier ? ' tier-' + def.tier : '');
             titleBadge.classList.remove('hidden');
         } else {
-            titleBadge.classList.add('hidden');
+            titleBadge.className = 'profile-title-badge hidden';
         }
     }
     updateMenuTitleBadge();

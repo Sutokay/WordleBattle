@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=16">
+    <link rel="stylesheet" href="css/style.css?v=17">
 </head>
 <body>
 
@@ -412,23 +412,28 @@
     </div>
 </div>
 
-<div id="playerProfileModal" class="overlay-modal hidden">
-    <div class="overlay-backdrop" onclick="closePlayerProfile()"></div>
-    <div class="overlay-panel overlay-panel-wide pp-panel">
-        <button class="overlay-close-btn" onclick="closePlayerProfile()">✕</button>
-        <div class="pp-banner" id="ppBanner"></div>
-        <div class="pp-avatar-wrap">
-            <div class="pp-avatar" id="ppAvatar"></div>
+<div id="playerProfileModal" class="profile-modal hidden">
+    <div class="profile-backdrop" onclick="closePlayerProfile()"></div>
+    <div class="profile-panel">
+        <button class="profile-close-btn" onclick="closePlayerProfile()">✕</button>
+
+        <div class="profile-modal-banner" id="ppBanner" style="cursor:default;pointer-events:none"></div>
+
+        <div class="profile-header">
+            <div class="profile-avatar-wrap" style="cursor:default;pointer-events:none">
+                <div class="profile-avatar" id="ppAvatar"></div>
+            </div>
+            <div class="profile-header-info">
+                <div class="profile-username" id="ppUsername"></div>
+                <div class="profile-rank-badge" id="ppRank"></div>
+                <div class="profile-title-badge hidden" id="ppTitle"></div>
+                <div class="pp-bio" id="ppBio"></div>
+                <div id="ppActions" style="margin-top:6px;display:flex;gap:8px"></div>
+            </div>
         </div>
-        <div class="pp-body">
-            <div class="pp-username" id="ppUsername"></div>
-            <div class="pp-rank"     id="ppRank"></div>
-            <div class="pp-title"    id="ppTitle"></div>
-            <div class="pp-bio"      id="ppBio"></div>
-        </div>
-        <div class="pp-actions" id="ppActions"></div>
-        <div class="pp-stat-grid" id="ppStatGrid"></div>
-        <div id="ppExtraStats" class="hidden pp-extra-stats">
+
+        <div class="profile-stat-grid" id="ppStatGrid"></div>
+        <div id="ppExtraStats" class="profile-extra-stats hidden">
             <div class="profile-words-row">
                 <div class="profile-firstguess hidden" id="ppFirstGuessWrap">
                     <span class="extra-stat-label">Most Common First Guess</span>
@@ -443,6 +448,6 @@
     </div>
 </div>
 
-<script src="js/game.js?v=16"></script>
+<script src="js/game.js?v=17"></script>
 </body>
 </html>
