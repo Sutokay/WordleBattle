@@ -1069,7 +1069,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 
 .result-box {
     width: 100%;
-    max-width: 520px;
+    max-width: 580px;
     text-align: center;
     border: 1px solid var(--border);
     background: var(--surface);
@@ -1940,93 +1940,82 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 .user-avatar, .profile-avatar, .game-player-avatar {
     will-change: border-color, box-shadow;
 }
-/* ── Rank border animations — smooth, progressive, rank-colored ── */
+/* ── Rank border animations — slow breathing glow, subtle at low ranks, stronger at high ranks ── */
 .avatar-border-bronze {
-    animation: bronze-glow 3.5s ease-in-out infinite !important;
+    animation: bronze-glow 5s ease-in-out infinite !important;
 }
 @keyframes bronze-glow {
-    0%, 100% { border-color: #B5722A; box-shadow: 0 0 4px rgba(205,127,50,0.35); }
-    50%       { border-color: #E8963C; box-shadow: 0 0 11px rgba(205,127,50,0.65); }
+    0%, 100% { border-color: #B5722A; box-shadow: 0 0 3px rgba(205,127,50,0.3); }
+    50%       { border-color: #D4833A; box-shadow: 0 0 8px rgba(205,127,50,0.5); }
 }
 
 .avatar-border-silver {
-    animation: silver-shimmer 3s ease-in-out infinite !important;
+    animation: silver-shimmer 5s ease-in-out infinite !important;
 }
 @keyframes silver-shimmer {
-    0%, 100% { border-color: #909090; box-shadow: 0 0 5px rgba(190,190,190,0.3); }
-    50%       { border-color: #D8D8D8; box-shadow: 0 0 14px rgba(210,210,210,0.7); }
+    0%, 100% { border-color: #909090; box-shadow: 0 0 4px rgba(190,190,190,0.3); }
+    50%       { border-color: #C8C8C8; box-shadow: 0 0 10px rgba(210,210,210,0.55); }
 }
 
 .avatar-border-gold {
-    animation: gold-glow 2.8s ease-in-out infinite !important;
+    animation: gold-glow 4.5s ease-in-out infinite !important;
 }
 @keyframes gold-glow {
-    0%, 100% { border-color: #C8960C; box-shadow: 0 0 6px rgba(200,150,12,0.45); }
-    50%       { border-color: #FFD700; box-shadow: 0 0 18px rgba(255,215,0,0.75); }
+    0%, 100% { border-color: #C8960C; box-shadow: 0 0 5px rgba(200,150,12,0.4); }
+    50%       { border-color: #FFD700; box-shadow: 0 0 13px rgba(255,215,0,0.6); }
 }
 
 .avatar-border-platinum {
-    animation: platinum-pulse 3s ease-in-out infinite !important;
+    animation: platinum-pulse 5s ease-in-out infinite !important;
 }
 @keyframes platinum-pulse {
-    0%, 100% { border-color: #ABABCC; box-shadow: 0 0 7px rgba(200,200,240,0.4); }
-    50%       { border-color: #E4E4FF;
-                box-shadow: 0 0 18px rgba(210,210,255,0.72), inset 0 0 5px rgba(200,200,230,0.12); }
+    0%, 100% { border-color: #ABABCC; box-shadow: 0 0 5px rgba(200,200,240,0.35); }
+    50%       { border-color: #D8D8FF; box-shadow: 0 0 14px rgba(210,210,255,0.6); }
 }
 
 .avatar-border-diamond {
-    animation: diamond-sparkle 2.5s ease-in-out infinite !important;
+    animation: diamond-sparkle 4s ease-in-out infinite !important;
 }
 @keyframes diamond-sparkle {
-    0%, 100% { border-color: #48CAE4; box-shadow: 0 0 7px rgba(72,202,228,0.45); }
-    40%       { border-color: #90E0EF;
-                box-shadow: 0 0 20px rgba(144,224,239,0.8), inset 0 0 5px rgba(0,180,216,0.12); }
-    70%       { border-color: #00B4D8; box-shadow: 0 0 13px rgba(0,180,216,0.6); }
+    0%, 100% { border-color: #48CAE4; box-shadow: 0 0 6px rgba(72,202,228,0.4); }
+    50%       { border-color: #90E0EF; box-shadow: 0 0 15px rgba(144,224,239,0.65); }
 }
 
 .avatar-border-champion {
-    animation: champion-arcane 2.2s ease-in-out infinite !important;
+    animation: champion-arcane 4s ease-in-out infinite !important;
 }
 @keyframes champion-arcane {
-    0%, 100% { border-color: #7B2FBE;
-               box-shadow: 0 0 8px rgba(123,47,190,0.55), 0 0 16px rgba(123,47,190,0.2); }
-    50%       { border-color: #C77DFF;
-                box-shadow: 0 0 22px rgba(199,125,255,0.88), 0 0 36px rgba(123,47,190,0.3), inset 0 0 8px rgba(100,0,200,0.1); }
+    0%, 100% { border-color: #7B2FBE; box-shadow: 0 0 7px rgba(123,47,190,0.5); }
+    50%       { border-color: #B06AEF; box-shadow: 0 0 16px rgba(176,106,239,0.7), 0 0 28px rgba(123,47,190,0.2); }
 }
 
 .avatar-border-master {
-    animation: master-fire 2s ease-in-out infinite !important;
+    animation: master-fire 3.5s ease-in-out infinite !important;
 }
 @keyframes master-fire {
-    0%, 100% { border-color: #CC2200;
-               box-shadow: 0 0 9px rgba(200,30,0,0.6), 0 0 18px rgba(200,30,0,0.25); }
-    40%       { border-color: #FF5500;
-                box-shadow: 0 0 22px rgba(255,85,0,0.88), 0 0 38px rgba(200,30,0,0.3), inset 0 0 8px rgba(200,30,0,0.1); }
-    70%       { border-color: #FF8C00;
-                box-shadow: 0 0 18px rgba(255,140,0,0.78), 0 0 30px rgba(255,85,0,0.25); }
+    0%, 100% { border-color: #CC2200; box-shadow: 0 0 7px rgba(200,30,0,0.5); }
+    40%       { border-color: #FF5500; box-shadow: 0 0 16px rgba(255,85,0,0.7), 0 0 28px rgba(200,30,0,0.2); }
+    70%       { border-color: #FF8C00; box-shadow: 0 0 13px rgba(255,140,0,0.6); }
 }
 
 .avatar-border-grandmaster {
-    animation: gm-inferno 1.8s ease-in-out infinite !important;
+    animation: gm-inferno 3.5s ease-in-out infinite !important;
 }
 @keyframes gm-inferno {
-    0%, 100% { border-color: #E0006A;
-               box-shadow: 0 0 10px rgba(224,0,106,0.65), 0 0 22px rgba(224,0,106,0.25); }
-    33%       { border-color: #FF3C00;
-                box-shadow: 0 0 24px rgba(255,60,0,0.9), 0 0 42px rgba(255,60,0,0.3), inset 0 0 10px rgba(200,0,80,0.12); }
-    66%       { border-color: #FF79C6;
-                box-shadow: 0 0 28px rgba(255,121,198,0.92), 0 0 46px rgba(255,0,110,0.3); }
+    0%, 100% { border-color: #E0006A; box-shadow: 0 0 9px rgba(224,0,106,0.55); }
+    33%       { border-color: #FF3C00; box-shadow: 0 0 18px rgba(255,60,0,0.72), 0 0 30px rgba(255,60,0,0.2); }
+    66%       { border-color: #FF79C6; box-shadow: 0 0 20px rgba(255,121,198,0.75), 0 0 32px rgba(255,0,110,0.2); }
 }
 
-/* Divine white-hot gold — pulses from warm gold to near-white, radiating divine light */
+/* Divine white-hot gold — slow breath between warm gold and radiant near-white */
 .avatar-border-lexicongod {
-    animation: lexicongod-divine 2.5s ease-in-out infinite !important;
+    animation: lexicongod-divine 4s ease-in-out infinite !important;
 }
 @keyframes lexicongod-divine {
     0%, 100% { border-color: #FFD700;
-               box-shadow: 0 0 16px rgba(255,215,0,0.85), 0 0 32px rgba(255,215,0,0.45), 0 0 56px rgba(255,215,0,0.15); }
-    50%       { border-color: #FFFDE7;
-                box-shadow: 0 0 28px rgba(255,253,231,0.98), 0 0 52px rgba(255,215,0,0.7), 0 0 80px rgba(255,200,0,0.35), inset 0 0 14px rgba(255,250,200,0.2); }
+               box-shadow: 0 0 12px rgba(255,215,0,0.7), 0 0 24px rgba(255,215,0,0.3); }
+    50%       { border-color: #FFF8C0;
+                box-shadow: 0 0 20px rgba(255,248,192,0.9), 0 0 40px rgba(255,215,0,0.5), 0 0 60px rgba(255,200,0,0.2); }
     100% { border-color: #FFD700; box-shadow: 0 0 16px rgba(255,215,0,0.65), 0 0 28px rgba(255,215,0,0.2); }
 }
 .avatar-border-ember { animation: ember-glow 2s ease-in-out infinite !important; }
@@ -2194,6 +2183,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
+    white-space: nowrap;
 }
 .result-player-info.right .result-player-rank { justify-content: flex-end; }
 
