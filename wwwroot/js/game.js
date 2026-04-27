@@ -382,13 +382,10 @@ async function confirmDeleteAccount() {
 function openSettingsModal() {
     closeDropdown();
     const s = loadStoredSettings();
-    document.getElementById('settingColorblind').checked   = !!s.colorblind;
-    document.getElementById('settingHardMode').checked     = !!s.hardMode;
-    document.getElementById('settingHighContrast').checked = !!s.highContrast;
-    document.getElementById('settingLightMode').checked    = !!s.lightMode;
-    document.getElementById('settingSounds').checked       = !!s.soundEnabled;
-    document.getElementById('settingMusic').checked        = !!s.musicEnabled;
-    document.getElementById('settingMusicVolume').value    = s.musicVolume ?? 30;
+    document.getElementById('settingLightMode').checked = !!s.lightMode;
+    document.getElementById('settingSounds').checked    = !!s.soundEnabled;
+    document.getElementById('settingMusic').checked     = !!s.musicEnabled;
+    document.getElementById('settingMusicVolume').value = s.musicVolume ?? 30;
     document.getElementById('settingsModal').classList.remove('hidden');
 }
 function closeSettingsModal() {
@@ -401,9 +398,6 @@ function loadStoredSettings() {
 
 function onSettingChange() {
     const s = {
-        colorblind:   document.getElementById('settingColorblind').checked,
-        hardMode:     document.getElementById('settingHardMode').checked,
-        highContrast: document.getElementById('settingHighContrast').checked,
         lightMode:    document.getElementById('settingLightMode').checked,
         soundEnabled: document.getElementById('settingSounds').checked,
         musicEnabled: document.getElementById('settingMusic').checked,
@@ -417,13 +411,12 @@ function onVolumeChange(val) {
     const s = loadStoredSettings();
     s.musicVolume = parseInt(val, 10);
     localStorage.setItem('wb_settings', JSON.stringify(s));
-    if (_bgMusic) _bgMusic.volume = s.musicVolume / 100;
+    // exponential curve so low values are actually quiet
+    if (_bgMusic) _bgMusic.volume = Math.pow(s.musicVolume / 100, 2.2);
 }
 
 function applySettings(s) {
-    document.body.classList.toggle('colorblind',    !!s.colorblind);
-    document.body.classList.toggle('high-contrast', !!s.highContrast);
-    document.body.classList.toggle('light-mode',    !!s.lightMode);
+    document.body.classList.toggle('light-mode', !!s.lightMode);
     applyMusicSetting(!!s.musicEnabled);
 }
 
@@ -495,31 +488,82 @@ function soundMatchLose() {
         _playTone(f, 0.3, 'sine', 0.14, i * 150));
 }
 
-// Background music — loads from wwwroot/audio/music.mp3
-let _bgMusic = null;
-function _initMusic() {
-    if (_bgMusic) return;
-    _bgMusic = new Audio('/audio/music.mp3');
-    _bgMusic.loop   = true;
+// Background music — three tracks that cycle, with a 3-second fade-in per track
+const MUSIC_TRACKS = ['/audio/music1.mp3', '/audio/music2.mp3', '/audio/music3.mp3'];
+let _bgMusic        = null;
+let _musicTrackIdx  = 0;
+let _musicFadeTimer = null;
+
+function _musicVolume() {
     const vol = loadStoredSettings().musicVolume ?? 30;
-    _bgMusic.volume = vol / 100;
+    return Math.pow(vol / 100, 2.2); // exponential so low values are actually quiet
 }
+
+function _fadeInMusic(audio, targetVol, durationMs = 3000) {
+    if (_musicFadeTimer) clearInterval(_musicFadeTimer);
+    audio.volume = 0;
+    const steps    = 60;
+    const interval = durationMs / steps;
+    let   step     = 0;
+    _musicFadeTimer = setInterval(() => {
+        step++;
+        audio.volume = Math.min(targetVol * (step / steps), targetVol);
+        if (step >= steps) { clearInterval(_musicFadeTimer); _musicFadeTimer = null; }
+    }, interval);
+}
+
+function _loadTrack(idx) {
+    if (_bgMusic) {
+        _bgMusic.onended = null;
+        _bgMusic.pause();
+    }
+    _bgMusic           = new Audio(MUSIC_TRACKS[idx]);
+    _bgMusic.volume    = 0;
+    _bgMusic.onended   = () => {
+        _musicTrackIdx = (_musicTrackIdx + 1) % MUSIC_TRACKS.length;
+        _loadTrack(_musicTrackIdx);
+        _bgMusic.play().catch(() => {});
+        _fadeInMusic(_bgMusic, _musicVolume());
+    };
+    return _bgMusic;
+}
+
 function applyMusicSetting(enabled) {
     if (enabled) {
-        _initMusic();
-        _bgMusic?.play().catch(() => {});
+        if (!_bgMusic) _loadTrack(_musicTrackIdx);
+        const promise = _bgMusic.play();
+        if (promise) {
+            promise.then(() => {
+                _fadeInMusic(_bgMusic, _musicVolume());
+            }).catch(() => {});
+        }
     } else {
+        if (_musicFadeTimer) { clearInterval(_musicFadeTimer); _musicFadeTimer = null; }
         _bgMusic?.pause();
     }
 }
 
-// Call this after any confirmed user gesture (login, play button, etc.)
-// so the browser allows audio to start.
+// Call after a confirmed user gesture so the browser allows audio
 function tryStartMusic() {
-    if (loadStoredSettings().musicEnabled) {
-        _initMusic();
-        _bgMusic?.play().catch(() => {});
-    }
+    if (!loadStoredSettings().musicEnabled) return;
+    if (!_bgMusic) _loadTrack(_musicTrackIdx);
+    _bgMusic.play().then(() => {
+        _fadeInMusic(_bgMusic, _musicVolume());
+    }).catch(() => {});
+}
+
+// Fallback: unlock audio on first interaction after a page refresh
+let _musicInteractionRegistered = false;
+function _registerMusicOnInteraction() {
+    if (_musicInteractionRegistered) return;
+    _musicInteractionRegistered = true;
+    const handler = () => {
+        if (loadStoredSettings().musicEnabled) tryStartMusic();
+        document.removeEventListener('click',   handler);
+        document.removeEventListener('keydown', handler);
+    };
+    document.addEventListener('click',   handler, { once: true });
+    document.addEventListener('keydown', handler, { once: true });
 }
 
 // Friends modal
@@ -1850,6 +1894,7 @@ document.addEventListener('keydown', e => {
 window.addEventListener('load', async () => {
     document.getElementById('siteHeader')?.classList.add('hidden');
     applySettings(loadStoredSettings());
+    _registerMusicOnInteraction(); // unlock music after refresh if user has it enabled
     const token = sessionStorage.getItem('token');
     if (!token) return showScreen('authScreen');
 
