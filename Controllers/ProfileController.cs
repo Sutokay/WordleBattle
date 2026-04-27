@@ -237,6 +237,31 @@ public class ProfileController : ControllerBase
         return Ok(results);
     }
 
+    [HttpGet("settings")]
+    public async Task<IActionResult> GetSettings()
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized();
+        var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        return Ok(profile?.Settings ?? "{}");
+    }
+
+    [HttpPut("settings")]
+    public async Task<IActionResult> SaveSettings([FromBody] System.Text.Json.JsonElement body)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized();
+        var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null)
+        {
+            profile = new UserProfile { UserId = userId };
+            _db.UserProfiles.Add(profile);
+        }
+        profile.Settings = body.GetRawText();
+        await _db.SaveChangesAsync();
+        return Ok(new { success = true });
+    }
+
     [HttpPut("picture")]
     public async Task<IActionResult> UpdatePicture([FromBody] PictureRequest req)
     {

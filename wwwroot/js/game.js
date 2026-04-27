@@ -392,8 +392,46 @@ function closeSettingsModal() {
     document.getElementById('settingsModal').classList.add('hidden');
 }
 
+const SETTINGS_DEFAULTS = { lightMode: false, soundEnabled: true, musicEnabled: true, musicVolume: 30 };
+
 function loadStoredSettings() {
-    try { return JSON.parse(localStorage.getItem('wb_settings') || '{}'); } catch { return {}; }
+    try {
+        const stored = JSON.parse(localStorage.getItem('wb_settings') || '{}');
+        return { ...SETTINGS_DEFAULTS, ...stored };
+    } catch { return { ...SETTINGS_DEFAULTS }; }
+}
+
+// Save settings to the server so they persist across devices / logouts
+async function saveSettingsToServer(s) {
+    const token = sessionStorage.getItem('token');
+    if (!token) return;
+    try {
+        await fetch('/api/profile/settings', {
+            method:  'PUT',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body:    JSON.stringify(s)
+        });
+    } catch {}
+}
+
+// Pull settings from server, merge over localStorage, return merged result
+async function loadSettingsFromServer() {
+    const token = sessionStorage.getItem('token');
+    if (!token) return;
+    try {
+        const res = await fetch('/api/profile/settings', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) return;
+        const text = await res.text();
+        if (!text) return;
+        const srv = JSON.parse(text);
+        if (srv && typeof srv === 'object' && Object.keys(srv).length > 0) {
+            // server wins — store merged result locally
+            const merged = { ...SETTINGS_DEFAULTS, ...srv };
+            localStorage.setItem('wb_settings', JSON.stringify(merged));
+        }
+    } catch {}
 }
 
 function onSettingChange() {
@@ -404,6 +442,7 @@ function onSettingChange() {
         musicVolume:  parseInt(document.getElementById('settingMusicVolume').value, 10),
     };
     localStorage.setItem('wb_settings', JSON.stringify(s));
+    saveSettingsToServer(s);
     applySettings(s);
 }
 
@@ -417,8 +456,9 @@ function onVolumeChange(val) {
 
 function applySettings(s) {
     document.body.classList.toggle('light-mode', !!s.lightMode);
-    // only stop music here — starting is always done via a user gesture (tryStartMusic)
+    // only stop music here — starting is always done via tryStartMusic (needs a user gesture)
     if (!s.musicEnabled) {
+        _musicStarted = false;
         if (_musicFadeTimer) { clearInterval(_musicFadeTimer); _musicFadeTimer = null; }
         if (_bgMusic) { _bgMusic.pause(); }
     }
@@ -493,10 +533,11 @@ function soundMatchLose() {
 }
 
 // Background music — three tracks that cycle, with a 3-second fade-in per track
-const MUSIC_TRACKS = ['/audio/music1.mp3', '/audio/music2.mp3', '/audio/music3.mp3'];
+const MUSIC_TRACKS  = ['/audio/music1.mp3', '/audio/music2.mp3', '/audio/music3.mp3'];
 let _bgMusic        = null;
 let _musicTrackIdx  = 0;
 let _musicFadeTimer = null;
+let _musicStarted   = false; // true once play() has been called, prevents double-starts
 
 function _musicVolume() {
     const vol = loadStoredSettings().musicVolume ?? 30;
@@ -532,43 +573,41 @@ function _loadTrack(idx) {
     return _bgMusic;
 }
 
-// Called from onSettingChange when user toggles Music on (guaranteed user gesture)
+// Called from onSettingChange when user toggles Music on/off (guaranteed user gesture)
 function applyMusicSetting(enabled) {
     if (enabled) {
         tryStartMusic();
     } else {
+        _musicStarted = false;
         if (_musicFadeTimer) { clearInterval(_musicFadeTimer); _musicFadeTimer = null; }
         if (_bgMusic) { _bgMusic.pause(); _bgMusic = null; }
     }
 }
 
-// Start (or restart) music — always loads a fresh Audio element to avoid stale state
+// Start music — always loads a fresh Audio element to avoid stale state after blocked play()
 function tryStartMusic() {
     if (!loadStoredSettings().musicEnabled) return;
+    _musicStarted = true; // mark as started before play() so no double-start from interaction handler
     _loadTrack(_musicTrackIdx);
     _bgMusic.play().then(() => {
         _fadeInMusic(_bgMusic, _musicVolume());
-    }).catch(() => {});
+    }).catch(() => {
+        _musicStarted = false; // browser blocked it — allow retry on next interaction
+    });
 }
 
-// Registers capture-phase listeners so the very first user interaction after a
-// page refresh starts music, even if that click is on a button that stops propagation.
+// Registers capture-phase listeners that start music on the first interaction after a
+// page refresh. Uses _musicStarted flag so toggling other settings never re-triggers it.
 let _musicInteractionRegistered = false;
 function _registerMusicOnInteraction() {
     if (_musicInteractionRegistered) return;
     _musicInteractionRegistered = true;
     const tryPlay = () => {
+        if (_musicStarted) return; // already playing or starting — do nothing
         if (!loadStoredSettings().musicEnabled) return;
-        if (_bgMusic && !_bgMusic.paused) {
-            // already playing — remove listeners
-            document.removeEventListener('click',      tryPlay, true);
-            document.removeEventListener('keydown',    tryPlay, true);
-            document.removeEventListener('touchstart', tryPlay, true);
-            return;
-        }
         tryStartMusic();
     };
-    // capture: true ensures we see the event before any child handler can stop it
+    // capture: true — fires before any child handler, even ones that stopPropagation
     document.addEventListener('click',      tryPlay, { capture: true });
     document.addEventListener('keydown',    tryPlay, { capture: true });
     document.addEventListener('touchstart', tryPlay, { capture: true });
@@ -1195,6 +1234,8 @@ async function login() {
         if (!data.success) return showError(data.error || 'Invalid credentials');
         sessionStorage.setItem('token', data.token);
         currentUser = data.user;
+        await loadSettingsFromServer(); // pull saved settings before applying
+        applySettings(loadStoredSettings());
         try { await initSignalR(); } catch {}
         showMenu();
         tryStartMusic(); // login is a user gesture — safe to start audio here
@@ -1919,6 +1960,8 @@ window.addEventListener('load', async () => {
     }
 
     currentUser = userData;
+    await loadSettingsFromServer(); // sync server settings on refresh
+    applySettings(loadStoredSettings());
     try { await initSignalR(); } catch {}
     showMenu();
     startFriendBadgePolling();

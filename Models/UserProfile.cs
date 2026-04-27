@@ -8,6 +8,7 @@ public class UserProfile
     public string  Border  { get; set; } = "default";
     public string  Title   { get; set; } = "";
     public string  Bio     { get; set; } = "";
-    public string? Banner  { get; set; }
-    public User?   User    { get; set; }
+    public string? Banner   { get; set; }
+    public string? Settings { get; set; }
+    public User?   User     { get; set; }
 }

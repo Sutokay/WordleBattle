@@ -95,6 +95,7 @@ using (var scope = app.Services.CreateScope())
     // add columns that were introduced after the initial schema — safe to run repeatedly
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN Bio TEXT NOT NULL DEFAULT ''"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN Banner TEXT"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN Settings TEXT"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Matches ADD COLUMN Player1PointsDelta INTEGER NOT NULL DEFAULT 0"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Matches ADD COLUMN Player2PointsDelta INTEGER NOT NULL DEFAULT 0"); } catch { }
 
