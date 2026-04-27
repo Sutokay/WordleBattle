@@ -2329,6 +2329,42 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 }
 .toggle-switch input:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
 
+.volume-slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.volume-icon { font-size: 1rem; user-select: none; }
+#settingMusicVolume {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 110px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+}
+#settingMusicVolume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--green);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+#settingMusicVolume::-webkit-slider-thumb:hover { transform: scale(1.2); }
+#settingMusicVolume::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--green);
+    border: none;
+    cursor: pointer;
+}
+
 /* Friends modal */
 /* Friends search bar */
 .friends-search-wrap { margin-bottom: 10px; }

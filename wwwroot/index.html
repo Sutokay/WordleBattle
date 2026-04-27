@@ -413,6 +413,19 @@
             </label>
         </div>
 
+        <div class="setting-row">
+            <div class="setting-label-wrap">
+                <div class="setting-label">Music Volume</div>
+                <div class="setting-desc">Adjust background music level</div>
+            </div>
+            <div class="volume-slider-wrap">
+                <span class="volume-icon">🔈</span>
+                <input type="range" id="settingMusicVolume" min="0" max="100" value="30"
+                       oninput="onVolumeChange(this.value)">
+                <span class="volume-icon">🔊</span>
+            </div>
+        </div>
+
     </div>
 </div>
 

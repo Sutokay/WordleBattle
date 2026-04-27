@@ -388,6 +388,7 @@ function openSettingsModal() {
     document.getElementById('settingLightMode').checked    = !!s.lightMode;
     document.getElementById('settingSounds').checked       = !!s.soundEnabled;
     document.getElementById('settingMusic').checked        = !!s.musicEnabled;
+    document.getElementById('settingMusicVolume').value    = s.musicVolume ?? 30;
     document.getElementById('settingsModal').classList.remove('hidden');
 }
 function closeSettingsModal() {
@@ -406,9 +407,17 @@ function onSettingChange() {
         lightMode:    document.getElementById('settingLightMode').checked,
         soundEnabled: document.getElementById('settingSounds').checked,
         musicEnabled: document.getElementById('settingMusic').checked,
+        musicVolume:  parseInt(document.getElementById('settingMusicVolume').value, 10),
     };
     localStorage.setItem('wb_settings', JSON.stringify(s));
     applySettings(s);
+}
+
+function onVolumeChange(val) {
+    const s = loadStoredSettings();
+    s.musicVolume = parseInt(val, 10);
+    localStorage.setItem('wb_settings', JSON.stringify(s));
+    if (_bgMusic) _bgMusic.volume = s.musicVolume / 100;
 }
 
 function applySettings(s) {
@@ -418,51 +427,87 @@ function applySettings(s) {
     applyMusicSetting(!!s.musicEnabled);
 }
 
-// Sound effects (Web Audio API — no files needed)
+// Sound effects — Web Audio API, no files needed
 let _audioCtx = null;
 function _getAudioCtx() {
     if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     return _audioCtx;
 }
-function _playTone(freq, duration, type = 'sine', vol = 0.25) {
+
+// Plays a tone with a quick attack and smooth exponential decay for a crisp, clean sound
+function _playTone(freq, duration, type = 'sine', vol = 0.18, delayMs = 0) {
     if (!loadStoredSettings().soundEnabled) return;
-    try {
-        const ctx  = _getAudioCtx();
-        const osc  = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = freq;
-        osc.type = type;
-        gain.gain.setValueAtTime(vol, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + duration);
-    } catch {}
+    setTimeout(() => {
+        try {
+            const ctx    = _getAudioCtx();
+            const osc    = ctx.createOscillator();
+            const gain   = ctx.createGain();
+            const t      = ctx.currentTime;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            osc.type = type;
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(vol, t + 0.006); // short attack
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+            osc.start(t);
+            osc.stop(t + duration);
+        } catch {}
+    }, delayMs);
 }
 
-function soundKeyPress()  { _playTone(660, 0.05, 'sine', 0.12); }
-function soundInvalid()   { _playTone(180, 0.18, 'sawtooth', 0.2); }
-function soundCorrect()   { [523, 659, 784].forEach((f, i) => setTimeout(() => _playTone(f, 0.2, 'sine', 0.25), i * 90)); }
-function soundRoundWin()  { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => _playTone(f, 0.2, 'sine', 0.22), i * 100)); }
-function soundRoundLose() { [400, 330, 260].forEach((f, i) => setTimeout(() => _playTone(f, 0.25, 'sine', 0.18), i * 120)); }
-function soundMatchWin()  { [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => _playTone(f, 0.22, 'sine', 0.25), i * 110)); }
-function soundMatchLose() { [440, 350, 280, 220].forEach((f, i) => setTimeout(() => _playTone(f, 0.28, 'sine', 0.18), i * 140)); }
+// crisp tap — short high sine, barely audible
+function soundKeyPress()  { _playTone(1080, 0.07, 'sine', 0.09); }
 
-// Background music
-// To add music: place an MP3 at wwwroot/audio/music.mp3
-// The file is not included — add your own track there.
+// soft low thud for invalid word
+function soundInvalid()   { _playTone(140, 0.22, 'sine', 0.22); }
+
+// clean ascending triad — correct guess
+function soundCorrect() {
+    _playTone(659,  0.18, 'sine', 0.18, 0);
+    _playTone(784,  0.18, 'sine', 0.18, 80);
+    _playTone(1047, 0.22, 'sine', 0.16, 160);
+}
+
+// round win — bright upward chime
+function soundRoundWin() {
+    _playTone(784,  0.15, 'sine', 0.16, 0);
+    _playTone(1047, 0.15, 'sine', 0.16, 90);
+    _playTone(1319, 0.22, 'sine', 0.14, 180);
+}
+
+// round lose — gentle downward tone
+function soundRoundLose() {
+    _playTone(494, 0.2, 'sine', 0.15, 0);
+    _playTone(392, 0.2, 'sine', 0.15, 110);
+    _playTone(330, 0.3, 'sine', 0.13, 220);
+}
+
+// match win — full 5-note fanfare
+function soundMatchWin() {
+    [659, 784, 1047, 1319, 1568].forEach((f, i) =>
+        _playTone(f, 0.22, 'sine', 0.16, i * 100));
+}
+
+// match lose — slow descend fading out
+function soundMatchLose() {
+    [494, 392, 330, 262].forEach((f, i) =>
+        _playTone(f, 0.3, 'sine', 0.14, i * 150));
+}
+
+// Background music — loads from wwwroot/audio/music.mp3
 let _bgMusic = null;
 function _initMusic() {
     if (_bgMusic) return;
     _bgMusic = new Audio('/audio/music.mp3');
     _bgMusic.loop   = true;
-    _bgMusic.volume = 0.25;
+    const vol = loadStoredSettings().musicVolume ?? 30;
+    _bgMusic.volume = vol / 100;
 }
 function applyMusicSetting(enabled) {
     if (enabled) {
         _initMusic();
-        _bgMusic?.play().catch(() => {}); // browser may block until first user interaction
+        _bgMusic?.play().catch(() => {});
     } else {
         _bgMusic?.pause();
     }
