@@ -451,12 +451,14 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-wrap: nowrap;
     gap: 8px;
     font-size: 1.55rem;
     font-weight: 700;
     color: var(--text);
     margin-top: 6px;
     min-height: 2rem;
+    white-space: nowrap;
 }
 .menu-queue-rank .rank-icon-img {
     width: 26px !important;
@@ -1833,75 +1835,96 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 .pp-title.tier-bronze,
 .profile-title-badge.tier-bronze,
 .menu-title-badge.tier-bronze,
+.result-player-title.tier-bronze,
 .game-player-title.tier-bronze     { color: #CD7F32; }
+
 .title-item-name.tier-silver, .pp-title.tier-silver,
-.profile-title-badge.tier-silver, .menu-title-badge.tier-silver, .game-player-title.tier-silver
+.profile-title-badge.tier-silver, .menu-title-badge.tier-silver,
+.result-player-title.tier-silver, .game-player-title.tier-silver
 { color: #C8C8C8; animation: title-silver 3s ease-in-out infinite; }
 @keyframes title-silver {
     0%, 100% { color: #A8A8A8; text-shadow: none; }
     50%       { color: #E0E0E0; text-shadow: 0 0 8px rgba(210,210,210,0.55); }
 }
+
 .title-item-name.tier-gold, .pp-title.tier-gold,
-.profile-title-badge.tier-gold, .menu-title-badge.tier-gold, .game-player-title.tier-gold
+.profile-title-badge.tier-gold, .menu-title-badge.tier-gold,
+.result-player-title.tier-gold, .game-player-title.tier-gold
 { color: #FFD700; animation: title-gold 2.8s ease-in-out infinite; }
 @keyframes title-gold {
     0%, 100% { color: #C89A0A; text-shadow: 0 0 5px rgba(200,150,10,0.3); }
     50%       { color: #FFD700; text-shadow: 0 0 12px rgba(255,215,0,0.6); }
 }
+
 .title-item-name.tier-platinum, .pp-title.tier-platinum,
-.profile-title-badge.tier-platinum, .menu-title-badge.tier-platinum, .game-player-title.tier-platinum
+.profile-title-badge.tier-platinum, .menu-title-badge.tier-platinum,
+.result-player-title.tier-platinum, .game-player-title.tier-platinum
 { color: #E0E0FF; animation: title-platinum 3s ease-in-out infinite; }
 @keyframes title-platinum {
     0%, 100% { color: #B8B8D8; text-shadow: 0 0 6px rgba(180,180,220,0.3); }
     50%       { color: #E8E8FF; text-shadow: 0 0 14px rgba(210,210,255,0.65); }
 }
+
 .title-item-name.tier-diamond, .pp-title.tier-diamond,
-.profile-title-badge.tier-diamond, .menu-title-badge.tier-diamond, .game-player-title.tier-diamond
+.profile-title-badge.tier-diamond, .menu-title-badge.tier-diamond,
+.result-player-title.tier-diamond, .game-player-title.tier-diamond
 { color: #90E0EF; animation: title-diamond 2.5s ease-in-out infinite; }
 @keyframes title-diamond {
     0%, 100% { color: #48CAE4; text-shadow: 0 0 7px rgba(72,202,228,0.4); }
     50%       { color: #90E0EF; text-shadow: 0 0 16px rgba(144,224,239,0.75); }
 }
+
+/* Champion — purple */
 .title-item-name.tier-champion, .pp-title.tier-champion,
-.profile-title-badge.tier-champion, .menu-title-badge.tier-champion, .game-player-title.tier-champion
-{ color: #F77F00; animation: title-champion 2.2s ease-in-out infinite; }
+.profile-title-badge.tier-champion, .menu-title-badge.tier-champion,
+.result-player-title.tier-champion, .game-player-title.tier-champion
+{ color: #C77DFF; animation: title-champion 2.2s ease-in-out infinite; }
 @keyframes title-champion {
-    0%, 100% { color: #C86000; text-shadow: 0 0 7px rgba(200,96,0,0.4); }
-    50%       { color: #FF9A20; text-shadow: 0 0 16px rgba(247,127,0,0.7); }
-}
-.title-item-name.tier-master, .pp-title.tier-master,
-.profile-title-badge.tier-master, .menu-title-badge.tier-master, .game-player-title.tier-master
-{ color: #C77DFF; animation: title-master 2s ease-in-out infinite; }
-@keyframes title-master {
     0%, 100% { color: #9B4FCC; text-shadow: 0 0 8px rgba(155,79,204,0.45); }
     50%       { color: #C77DFF; text-shadow: 0 0 18px rgba(199,125,255,0.8); }
 }
+
+/* Master — red and orange */
+.title-item-name.tier-master, .pp-title.tier-master,
+.profile-title-badge.tier-master, .menu-title-badge.tier-master,
+.result-player-title.tier-master, .game-player-title.tier-master
+{ color: #FF4500; animation: title-master 2s ease-in-out infinite; }
+@keyframes title-master {
+    0%, 100% { color: #CC2200; text-shadow: 0 0 8px rgba(200,30,0,0.5); }
+    50%       { color: #FF8C00; text-shadow: 0 0 20px rgba(255,140,0,0.82); }
+}
+
+/* Grandmaster — vibrant pink-red and orange */
 .title-item-name.tier-grandmaster, .pp-title.tier-grandmaster,
-.profile-title-badge.tier-grandmaster, .menu-title-badge.tier-grandmaster, .game-player-title.tier-grandmaster
+.profile-title-badge.tier-grandmaster, .menu-title-badge.tier-grandmaster,
+.result-player-title.tier-grandmaster, .game-player-title.tier-grandmaster
 { color: #FF79C6; animation: title-gm 1.8s ease-in-out infinite; }
 @keyframes title-gm {
     0%, 100% { color: #E0006A; text-shadow: 0 0 9px rgba(224,0,106,0.5); }
-    50%       { color: #FF79C6; text-shadow: 0 0 20px rgba(255,121,198,0.85); }
+    33%       { color: #FF3C00; text-shadow: 0 0 16px rgba(255,60,0,0.72); }
+    66%       { color: #FF79C6; text-shadow: 0 0 20px rgba(255,121,198,0.85); }
 }
+
+/* Lexicon God — divine white-hot gold */
 .title-item-name.tier-lexicongod, .pp-title.tier-lexicongod,
-.profile-title-badge.tier-lexicongod, .menu-title-badge.tier-lexicongod, .game-player-title.tier-lexicongod {
-    background: linear-gradient(90deg, #FFD700 0%, #FF7700 30%, #CC00FF 55%, #00E87A 75%, #FFD700 100%);
-    background-size: 300% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: lexgod-text 3s linear infinite;
+.profile-title-badge.tier-lexicongod, .menu-title-badge.tier-lexicongod,
+.result-player-title.tier-lexicongod, .game-player-title.tier-lexicongod
+{ color: #FFD700; animation: title-lexgod 2.5s ease-in-out infinite; }
+@keyframes title-lexgod {
+    0%, 100% { color: #FFD700; text-shadow: 0 0 8px rgba(255,215,0,0.65), 0 0 16px rgba(255,215,0,0.3); }
+    50%       { color: #FFFDE7; text-shadow: 0 0 18px rgba(255,253,231,0.95), 0 0 32px rgba(255,215,0,0.6), 0 0 48px rgba(255,200,0,0.3); }
 }
-@keyframes lexgod-text { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+
 .title-item-name.tier-achievement,
+.result-player-title.tier-achievement,
 .game-player-title.tier-achievement { color: var(--text-dim); }
 
 /* Title item visual weight scales with rank tier */
 .title-item:has(.tier-gold)        { background: rgba(255,215,0,0.04); }
 .title-item:has(.tier-platinum)    { background: rgba(220,220,255,0.05); }
 .title-item:has(.tier-diamond)     { background: rgba(0,180,216,0.05); }
-.title-item:has(.tier-champion)    { background: rgba(247,127,0,0.05); }
-.title-item:has(.tier-master)      { background: rgba(157,78,221,0.06); }
+.title-item:has(.tier-champion)    { background: rgba(157,78,221,0.05); }
+.title-item:has(.tier-master)      { background: rgba(200,30,0,0.06); }
 .title-item:has(.tier-grandmaster) { background: rgba(255,0,110,0.07); }
 .title-item:has(.tier-lexicongod)  { background: rgba(255,215,0,0.07); border-color: rgba(255,215,0,0.15); }
 
@@ -1962,41 +1985,48 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 }
 
 .avatar-border-champion {
-    animation: champion-flame 2.2s ease-in-out infinite !important;
+    animation: champion-arcane 2.2s ease-in-out infinite !important;
 }
-@keyframes champion-flame {
-    0%, 100% { border-color: #C82020; box-shadow: 0 0 8px rgba(200,32,32,0.5); }
-    50%       { border-color: #F77F00;
-                box-shadow: 0 0 22px rgba(247,127,0,0.82), inset 0 0 6px rgba(247,127,0,0.12); }
+@keyframes champion-arcane {
+    0%, 100% { border-color: #7B2FBE;
+               box-shadow: 0 0 8px rgba(123,47,190,0.55), 0 0 16px rgba(123,47,190,0.2); }
+    50%       { border-color: #C77DFF;
+                box-shadow: 0 0 22px rgba(199,125,255,0.88), 0 0 36px rgba(123,47,190,0.3), inset 0 0 8px rgba(100,0,200,0.1); }
 }
 
 .avatar-border-master {
-    animation: master-electric 2s ease-in-out infinite !important;
+    animation: master-fire 2s ease-in-out infinite !important;
 }
-@keyframes master-electric {
-    0%, 100% { border-color: #7B2FBE; box-shadow: 0 0 9px rgba(123,47,190,0.55); }
-    50%       { border-color: #C77DFF;
-                box-shadow: 0 0 24px rgba(199,125,255,0.85), inset 0 0 7px rgba(90,24,154,0.15); }
+@keyframes master-fire {
+    0%, 100% { border-color: #CC2200;
+               box-shadow: 0 0 9px rgba(200,30,0,0.6), 0 0 18px rgba(200,30,0,0.25); }
+    40%       { border-color: #FF5500;
+                box-shadow: 0 0 22px rgba(255,85,0,0.88), 0 0 38px rgba(200,30,0,0.3), inset 0 0 8px rgba(200,30,0,0.1); }
+    70%       { border-color: #FF8C00;
+                box-shadow: 0 0 18px rgba(255,140,0,0.78), 0 0 30px rgba(255,85,0,0.25); }
 }
 
 .avatar-border-grandmaster {
-    animation: gm-neon 1.8s ease-in-out infinite !important;
+    animation: gm-inferno 1.8s ease-in-out infinite !important;
 }
-@keyframes gm-neon {
-    0%, 100% { border-color: #E0006A; box-shadow: 0 0 10px rgba(224,0,106,0.6); }
-    50%       { border-color: #FF79C6;
-                box-shadow: 0 0 26px rgba(255,121,198,0.88), inset 0 0 8px rgba(255,0,110,0.15); }
+@keyframes gm-inferno {
+    0%, 100% { border-color: #E0006A;
+               box-shadow: 0 0 10px rgba(224,0,106,0.65), 0 0 22px rgba(224,0,106,0.25); }
+    33%       { border-color: #FF3C00;
+                box-shadow: 0 0 24px rgba(255,60,0,0.9), 0 0 42px rgba(255,60,0,0.3), inset 0 0 10px rgba(200,0,80,0.12); }
+    66%       { border-color: #FF79C6;
+                box-shadow: 0 0 28px rgba(255,121,198,0.92), 0 0 46px rgba(255,0,110,0.3); }
 }
 
+/* Divine white-hot gold — pulses from warm gold to near-white, radiating divine light */
 .avatar-border-lexicongod {
-    animation: lexicongod-storm 3s linear infinite !important;
+    animation: lexicongod-divine 2.5s ease-in-out infinite !important;
 }
-@keyframes lexicongod-storm {
-    0%   { border-color: #FFD700; box-shadow: 0 0 16px rgba(255,215,0,0.65), 0 0 28px rgba(255,215,0,0.2); }
-    20%  { border-color: #FF5500; box-shadow: 0 0 16px rgba(255,85,0,0.65),  0 0 28px rgba(255,85,0,0.2);  }
-    40%  { border-color: #CC00FF; box-shadow: 0 0 16px rgba(204,0,255,0.65), 0 0 28px rgba(204,0,255,0.2); }
-    60%  { border-color: #00E87A; box-shadow: 0 0 16px rgba(0,232,122,0.65), 0 0 28px rgba(0,232,122,0.2); }
-    80%  { border-color: #00AAFF; box-shadow: 0 0 16px rgba(0,170,255,0.65), 0 0 28px rgba(0,170,255,0.2); }
+@keyframes lexicongod-divine {
+    0%, 100% { border-color: #FFD700;
+               box-shadow: 0 0 16px rgba(255,215,0,0.85), 0 0 32px rgba(255,215,0,0.45), 0 0 56px rgba(255,215,0,0.15); }
+    50%       { border-color: #FFFDE7;
+                box-shadow: 0 0 28px rgba(255,253,231,0.98), 0 0 52px rgba(255,215,0,0.7), 0 0 80px rgba(255,200,0,0.35), inset 0 0 14px rgba(255,250,200,0.2); }
     100% { border-color: #FFD700; box-shadow: 0 0 16px rgba(255,215,0,0.65), 0 0 28px rgba(255,215,0,0.2); }
 }
 .avatar-border-ember { animation: ember-glow 2s ease-in-out infinite !important; }
@@ -2184,7 +2214,7 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     background: radial-gradient(circle, rgba(220,47,2,0.18) 0%, var(--surface2) 70%);
 }
 .border-swatch-circle.avatar-border-champion {
-    background: radial-gradient(circle, rgba(247,127,0,0.15) 0%, var(--surface2) 70%);
+    background: radial-gradient(circle, rgba(157,78,221,0.15) 0%, var(--surface2) 70%);
 }
 .border-swatch-circle.avatar-border-diamond,
 .border-swatch-circle.avatar-border-bullseye,
@@ -2192,13 +2222,13 @@ button:active { opacity: 0.75; transform: scale(0.99); }
     background: radial-gradient(circle, rgba(0,180,216,0.12) 0%, var(--surface2) 70%);
 }
 .border-swatch-circle.avatar-border-master {
-    background: radial-gradient(circle, rgba(157,78,221,0.15) 0%, var(--surface2) 70%);
+    background: radial-gradient(circle, rgba(200,30,0,0.15) 0%, var(--surface2) 70%);
 }
 .border-swatch-circle.avatar-border-grandmaster {
     background: radial-gradient(circle, rgba(255,0,110,0.14) 0%, var(--surface2) 70%);
 }
 .border-swatch-circle.avatar-border-lexicongod {
-    background: radial-gradient(circle, rgba(255,215,0,0.15) 0%, var(--surface2) 70%);
+    background: radial-gradient(circle, rgba(255,245,150,0.2) 0%, rgba(255,215,0,0.08) 50%, var(--surface2) 70%);
 }
 .border-swatch-circle.avatar-border-rainbow {
     background: conic-gradient(
