@@ -385,6 +385,9 @@ function openSettingsModal() {
     document.getElementById('settingColorblind').checked   = !!s.colorblind;
     document.getElementById('settingHardMode').checked     = !!s.hardMode;
     document.getElementById('settingHighContrast').checked = !!s.highContrast;
+    document.getElementById('settingLightMode').checked    = !!s.lightMode;
+    document.getElementById('settingSounds').checked       = !!s.soundEnabled;
+    document.getElementById('settingMusic').checked        = !!s.musicEnabled;
     document.getElementById('settingsModal').classList.remove('hidden');
 }
 function closeSettingsModal() {
@@ -399,7 +402,10 @@ function onSettingChange() {
     const s = {
         colorblind:   document.getElementById('settingColorblind').checked,
         hardMode:     document.getElementById('settingHardMode').checked,
-        highContrast: document.getElementById('settingHighContrast').checked
+        highContrast: document.getElementById('settingHighContrast').checked,
+        lightMode:    document.getElementById('settingLightMode').checked,
+        soundEnabled: document.getElementById('settingSounds').checked,
+        musicEnabled: document.getElementById('settingMusic').checked,
     };
     localStorage.setItem('wb_settings', JSON.stringify(s));
     applySettings(s);
@@ -408,6 +414,58 @@ function onSettingChange() {
 function applySettings(s) {
     document.body.classList.toggle('colorblind',    !!s.colorblind);
     document.body.classList.toggle('high-contrast', !!s.highContrast);
+    document.body.classList.toggle('light-mode',    !!s.lightMode);
+    applyMusicSetting(!!s.musicEnabled);
+}
+
+// Sound effects (Web Audio API — no files needed)
+let _audioCtx = null;
+function _getAudioCtx() {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return _audioCtx;
+}
+function _playTone(freq, duration, type = 'sine', vol = 0.25) {
+    if (!loadStoredSettings().soundEnabled) return;
+    try {
+        const ctx  = _getAudioCtx();
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = type;
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+    } catch {}
+}
+
+function soundKeyPress()  { _playTone(660, 0.05, 'sine', 0.12); }
+function soundInvalid()   { _playTone(180, 0.18, 'sawtooth', 0.2); }
+function soundCorrect()   { [523, 659, 784].forEach((f, i) => setTimeout(() => _playTone(f, 0.2, 'sine', 0.25), i * 90)); }
+function soundRoundWin()  { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => _playTone(f, 0.2, 'sine', 0.22), i * 100)); }
+function soundRoundLose() { [400, 330, 260].forEach((f, i) => setTimeout(() => _playTone(f, 0.25, 'sine', 0.18), i * 120)); }
+function soundMatchWin()  { [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => _playTone(f, 0.22, 'sine', 0.25), i * 110)); }
+function soundMatchLose() { [440, 350, 280, 220].forEach((f, i) => setTimeout(() => _playTone(f, 0.28, 'sine', 0.18), i * 140)); }
+
+// Background music
+// To add music: place an MP3 at wwwroot/audio/music.mp3
+// The file is not included — add your own track there.
+let _bgMusic = null;
+function _initMusic() {
+    if (_bgMusic) return;
+    _bgMusic = new Audio('/audio/music.mp3');
+    _bgMusic.loop   = true;
+    _bgMusic.volume = 0.25;
+}
+function applyMusicSetting(enabled) {
+    if (enabled) {
+        _initMusic();
+        _bgMusic?.play().catch(() => {}); // browser may block until first user interaction
+    } else {
+        _bgMusic?.pause();
+    }
 }
 
 // Friends modal
@@ -1084,8 +1142,8 @@ async function initSignalR() {
         const oppName = data.opponent;
         _opponentName = oppName;
 
-        document.getElementById('p1Name').textContent  = myPlayer === 1 ? myName  : capName(oppName);
-        document.getElementById('p2Name').textContent  = myPlayer === 1 ? capName(oppName) : myName;
+        document.getElementById('p1Name').textContent  = myName;          // left = always me
+        document.getElementById('p2Name').textContent  = capName(oppName); // right = always opponent
         document.getElementById('p1Score').textContent = '0';
         document.getElementById('p2Score').textContent = '0';
         document.getElementById('roundNum').textContent = '?';
@@ -1149,8 +1207,8 @@ async function fetchPublicProfile(userId) {
 }
 
 function populateGamePanels(p1Name, p2Name) {
-    const myPanelNum  = myPlayer;
-    const oppPanelNum = myPlayer === 1 ? 2 : 1;
+    const myPanelNum  = 1; // left panel is always me
+    const oppPanelNum = 2; // right panel is always opponent
 
     const myAvatarEl  = document.getElementById(`p${myPanelNum}Avatar`);
     const myRankEl    = document.getElementById(`p${myPanelNum}Rank`);
@@ -1360,10 +1418,10 @@ function startRound(data) {
     document.getElementById('p1Score').textContent  = myMatchScore;
     document.getElementById('p2Score').textContent  = oppMatchScore;
 
-    const p1NameStr = myPlayer === 1 ? data.p1Name : data.p2Name;
-    const p2NameStr = myPlayer === 1 ? data.p2Name : data.p1Name;
-    document.getElementById('p1Name').textContent   = p1NameStr;
-    document.getElementById('p2Name').textContent   = p2NameStr;
+    const p1NameStr = myPlayer === 1 ? data.p1Name : data.p2Name; // my name
+    const p2NameStr = myPlayer === 1 ? data.p2Name : data.p1Name; // opp name
+    document.getElementById('p1Name').textContent = p1NameStr;  // left = me
+    document.getElementById('p2Name').textContent = p2NameStr;  // right = opponent
 
     currentGuess = '';
     myGuesses    = [];
@@ -1507,6 +1565,7 @@ function shakeCurrentRow() {
 function handleKey(key) {
     if (!roundActive || myRoundDone) return;
     animateKey(key);
+    if (key !== 'ENTER') soundKeyPress();
     if (key === 'ENTER') {
         submitGuess();
     } else if (key === 'BACK') {
@@ -1536,6 +1595,7 @@ async function submitGuess() {
             renderBoard('myBoard', myGuesses, false);
             showError(res.error);
             shakeCurrentRow();
+            soundInvalid();
         }
     } catch {
         currentGuess = wordToSubmit;
@@ -1554,7 +1614,7 @@ function handleGuess(data) {
         myGuesses.push(guess);
         currentGuess = '';
 
-        if (data.correct) { myRoundDone = true; }
+        if (data.correct) { myRoundDone = true; soundCorrect(); }
         else if (myGuesses.length >= 6) { myRoundDone = true; showInfo('No guesses left — waiting for opponent…'); }
 
         renderBoard('myBoard', myGuesses, false, rowIndex);
@@ -1592,6 +1652,8 @@ function showRoundEndModal(data) {
     document.getElementById('roundEndWord').textContent = word;
     document.getElementById('roundEndSub').textContent  = 'Next round starting…';
     document.getElementById('roundEndModal').classList.remove('hidden');
+
+    if (!tied) { iWon ? soundRoundWin() : soundRoundLose(); }
 }
 
 function endRound(data) {
@@ -1632,6 +1694,7 @@ function endMatch(data) {
     document.getElementById('resultTitle').textContent    = tied ? "It's a draw!" : iWon ? 'You won! 🎉' : 'You lost.';
     document.getElementById('resultMyScore').textContent  = data.myScore;
     document.getElementById('resultOppScore').textContent = data.oppScore;
+    if (!tied) { iWon ? soundMatchWin() : soundMatchLose(); }
     const triggerBar = renderRankProgress(data.points, data.pointsDelta ?? 0);
     populateResultPlayers(data.points);
     document.getElementById('resultButtons')?.classList.remove('hidden');
@@ -1666,8 +1729,12 @@ function populateResultPlayers(myPoints) {
     if (myTitleEl) {
         const tid = userProfile?.title || '';
         const def = TITLES.find(t => t.id === tid);
-        if (def && tid) { myTitleEl.textContent = def.label; myTitleEl.classList.remove('hidden'); }
-        else              myTitleEl.classList.add('hidden');
+        if (def && tid) {
+            myTitleEl.textContent = def.label;
+            myTitleEl.className = 'result-player-title' + (def.tier ? ' tier-' + def.tier : '');
+        } else {
+            myTitleEl.className = 'result-player-title hidden';
+        }
     }
 
     const oppAv = document.getElementById('resultOppAvatar');
@@ -1695,8 +1762,12 @@ function populateResultPlayers(myPoints) {
     if (oppTitleEl) {
         const tid = _opponentProfile?.title || '';
         const def = TITLES.find(t => t.id === tid);
-        if (def && tid) { oppTitleEl.textContent = def.label; oppTitleEl.classList.remove('hidden'); }
-        else              oppTitleEl.classList.add('hidden');
+        if (def && tid) {
+            oppTitleEl.textContent = def.label;
+            oppTitleEl.className = 'result-player-title' + (def.tier ? ' tier-' + def.tier : '');
+        } else {
+            oppTitleEl.className = 'result-player-title hidden';
+        }
     }
 }
 
@@ -1714,6 +1785,7 @@ document.addEventListener('keydown', e => {
     } else if (/^[a-zA-Z]$/.test(e.key) && currentGuess.length < 5) {
         const k = e.key.toUpperCase();
         animateKey(k);
+        soundKeyPress();
         currentGuess += k;
         renderBoard('myBoard', myGuesses, false);
         animateTilePop();

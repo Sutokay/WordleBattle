@@ -19,6 +19,24 @@
     --font-sans:   'Inter', 'Helvetica Neue', Arial, sans-serif;
     --font-title:  'Libre Baskerville', Georgia, serif;
 }
+body.light-mode {
+    --bg:         #f0f0f0;
+    --surface:    #ffffff;
+    --surface2:   #e8e8e8;
+    --border:     #d3d6da;
+    --border-dim: #e0e0e0;
+    --text:       #1a1a1b;
+    --text-dim:   #4a4a4b;
+    --text-muted: #6e6f71;
+    --absent:     #787c7e;
+    --key-bg:     #d3d6da;
+    --info-bg:    #f5f5f5;
+}
+body.light-mode .title-wordle { color: #1a1a1b; }
+body.light-mode .title-battle  { color: #787c7e; }
+body.light-mode .tile          { border-color: #d3d6da; color: #1a1a1b; }
+body.light-mode .tile.filled   { border-color: #999; }
+
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
