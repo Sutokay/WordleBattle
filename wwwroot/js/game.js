@@ -513,6 +513,15 @@ function applyMusicSetting(enabled) {
     }
 }
 
+// Call this after any confirmed user gesture (login, play button, etc.)
+// so the browser allows audio to start.
+function tryStartMusic() {
+    if (loadStoredSettings().musicEnabled) {
+        _initMusic();
+        _bgMusic?.play().catch(() => {});
+    }
+}
+
 // Friends modal
 let _friendsCurrentTab = 'friends';
 
@@ -1136,6 +1145,7 @@ async function login() {
         currentUser = data.user;
         try { await initSignalR(); } catch {}
         showMenu();
+        tryStartMusic(); // login is a user gesture — safe to start audio here
     } catch (e) { showError('Login failed'); }
 }
 
