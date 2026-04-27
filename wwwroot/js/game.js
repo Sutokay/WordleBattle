@@ -417,7 +417,11 @@ function onVolumeChange(val) {
 
 function applySettings(s) {
     document.body.classList.toggle('light-mode', !!s.lightMode);
-    applyMusicSetting(!!s.musicEnabled);
+    // only stop music here — starting is always done via a user gesture (tryStartMusic)
+    if (!s.musicEnabled) {
+        if (_musicFadeTimer) { clearInterval(_musicFadeTimer); _musicFadeTimer = null; }
+        if (_bgMusic) { _bgMusic.pause(); }
+    }
 }
 
 // Sound effects — Web Audio API, no files needed
@@ -528,42 +532,46 @@ function _loadTrack(idx) {
     return _bgMusic;
 }
 
+// Called from onSettingChange when user toggles Music on (guaranteed user gesture)
 function applyMusicSetting(enabled) {
     if (enabled) {
-        if (!_bgMusic) _loadTrack(_musicTrackIdx);
-        const promise = _bgMusic.play();
-        if (promise) {
-            promise.then(() => {
-                _fadeInMusic(_bgMusic, _musicVolume());
-            }).catch(() => {});
-        }
+        tryStartMusic();
     } else {
         if (_musicFadeTimer) { clearInterval(_musicFadeTimer); _musicFadeTimer = null; }
-        _bgMusic?.pause();
+        if (_bgMusic) { _bgMusic.pause(); _bgMusic = null; }
     }
 }
 
-// Call after a confirmed user gesture so the browser allows audio
+// Start (or restart) music — always loads a fresh Audio element to avoid stale state
 function tryStartMusic() {
     if (!loadStoredSettings().musicEnabled) return;
-    if (!_bgMusic) _loadTrack(_musicTrackIdx);
+    _loadTrack(_musicTrackIdx);
     _bgMusic.play().then(() => {
         _fadeInMusic(_bgMusic, _musicVolume());
     }).catch(() => {});
 }
 
-// Fallback: unlock audio on first interaction after a page refresh
+// Registers capture-phase listeners so the very first user interaction after a
+// page refresh starts music, even if that click is on a button that stops propagation.
 let _musicInteractionRegistered = false;
 function _registerMusicOnInteraction() {
     if (_musicInteractionRegistered) return;
     _musicInteractionRegistered = true;
-    const handler = () => {
-        if (loadStoredSettings().musicEnabled) tryStartMusic();
-        document.removeEventListener('click',   handler);
-        document.removeEventListener('keydown', handler);
+    const tryPlay = () => {
+        if (!loadStoredSettings().musicEnabled) return;
+        if (_bgMusic && !_bgMusic.paused) {
+            // already playing — remove listeners
+            document.removeEventListener('click',      tryPlay, true);
+            document.removeEventListener('keydown',    tryPlay, true);
+            document.removeEventListener('touchstart', tryPlay, true);
+            return;
+        }
+        tryStartMusic();
     };
-    document.addEventListener('click',   handler, { once: true });
-    document.addEventListener('keydown', handler, { once: true });
+    // capture: true ensures we see the event before any child handler can stop it
+    document.addEventListener('click',      tryPlay, { capture: true });
+    document.addEventListener('keydown',    tryPlay, { capture: true });
+    document.addEventListener('touchstart', tryPlay, { capture: true });
 }
 
 // Friends modal
