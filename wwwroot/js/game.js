@@ -12,6 +12,8 @@ let myRoundDone = false;
 let roundActive = false;
 let myMatchScore  = 0;
 let oppMatchScore = 0;
+// these two work together: if the round ends while the tile flip animation is still
+// playing, we hold the RoundEnd modal until the animation finishes
 let revealAnimationPromise = null;
 let pendingRoundEndData    = null;
 let _inQueue = false;
@@ -58,6 +60,8 @@ function rankIconHTMLFromName(rankName, sizePx = 18) {
     return rankIconHTML(r.name, r.emoji, sizePx);
 }
 
+// builds the rank progress bar on the result screen and returns a function
+// that, when called, triggers the animated fill + point counter
 function renderRankProgress(totalPoints, pointsDelta) {
     const rank     = getRank(totalPoints);
     const rankIdx  = RANKS.indexOf(rank);
@@ -1414,6 +1418,7 @@ function renderBoard(boardId, guesses, mini, skipColorRow = -1) {
     }
 }
 
+// flips each tile in the row one by one to reveal green/yellow/gray
 async function animateRowReveal(boardId, rowIndex, results) {
     const board = document.getElementById(boardId);
     const rows  = board.querySelectorAll('.row');
@@ -1514,7 +1519,7 @@ function handleKey(key) {
     }
 }
 
-let _guessSubmitting = false;
+let _guessSubmitting = false; // prevents double-submitting on fast enter presses
 
 async function submitGuess() {
     if (currentGuess.length !== 5) return showError('Word must be 5 letters');

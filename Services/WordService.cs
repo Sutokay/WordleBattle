@@ -10,13 +10,11 @@ public class WordService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly HashSet<string> _usedWords = new();
 
-    // Shared across all instances — caches words validated via the dictionary API
-    // so we never hit the API twice for the same word.
+    // shared validation cache — avoids hitting the dictionary API more than once per word
     private static readonly ConcurrentDictionary<string, bool> _validationCache =
         new(StringComparer.OrdinalIgnoreCase);
 
-    // Curated list of common 5-letter English words used for both generation and validation.
-    // Validation uses this list so no API call is needed per guess.
+    // built-in word list used for both random word selection and fast validation
     private static readonly HashSet<string> WordList = new(StringComparer.OrdinalIgnoreCase)
     {
         "ABOUT","ABOVE","ABUSE","ACTOR","ACUTE","ADMIT","ADOPT","ADULT","AFTER","AGAIN",
@@ -196,23 +194,16 @@ public class WordService
         }
     }
 
-    /// <summary>
-    /// Validates a guess against the curated word list first (instant), then falls back
-    /// to the Free Dictionary API so that any real English 5-letter word is accepted.
-    /// Results are cached so each word only ever hits the API once per server lifetime.
-    /// </summary>
+    // Checks the built-in list first, then falls back to the free dictionary API.
+    // API results are cached so each word only hits the network once.
     public async Task<bool> IsValidWordAsync(string word)
     {
         word = word.ToUpper().Trim();
         if (word.Length != 5 || !word.All(c => c >= 'A' && c <= 'Z')) return false;
 
-        // Fast path — always in the local list
         if (WordList.Contains(word)) return true;
-
-        // Cache hit from a previous API call
         if (_validationCache.TryGetValue(word, out var cached)) return cached;
 
-        // Call the Free Dictionary API (no key required)
         var valid = await CheckDictionaryApiAsync(word.ToLower());
         _validationCache[word] = valid;
         return valid;
@@ -227,15 +218,15 @@ public class WordService
             var response = await client.GetAsync(
                 $"https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
                 cts.Token);
-            return response.IsSuccessStatusCode; // 200 = valid, 404 = not found
+            return response.IsSuccessStatusCode;
         }
         catch
         {
-            // API unreachable — fail open so players aren't blocked
-            return true;
+            return true; // fail open if API is unreachable
         }
     }
 
+    // Returns a char array: G = correct position, Y = wrong position, X = not in word
     public char[] CheckGuess(string guess, string target)
     {
         guess = guess.ToUpper();

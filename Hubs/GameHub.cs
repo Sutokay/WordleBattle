@@ -15,10 +15,12 @@ public class GameHub : Hub
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<GameHub> _logger;
 
+    // _hubCtx is static so background tasks (StartRound, WinRound, etc.) can send
+    // messages to clients after the hub instance that started them has been disposed.
     private static IHubContext<GameHub> _hubCtx = null!;
 
-    private static readonly ConcurrentDictionary<string, int> _connToUser = new();
-    private static readonly ConcurrentDictionary<int, MatchState> _matches = new();
+    private static readonly ConcurrentDictionary<string, int> _connToUser = new(); // connectionId → userId
+    private static readonly ConcurrentDictionary<int, MatchState> _matches = new(); // matchId → state
     private static readonly object _queueLock = new();
     private static readonly List<QueuedPlayer> _queue = new();
 
@@ -263,8 +265,7 @@ public class GameHub : Hub
         if (m == null || m.Status == "Completed") return;
 
         var rNum = m.Rounds.Count + 1;
-        // Safety cap — prevent runaway OT (shouldn't happen, but just in case)
-        if (rNum > 20) { await EndMatch(matchId); return; }
+        if (rNum > 20) { await EndMatch(matchId); return; } // safety cap
 
         var word = await wordService.GetRandomWordAsync();
         var r    = new Round { MatchId = matchId, RoundNumber = rNum, Word = word, StartedAt = DateTime.UtcNow };
@@ -407,7 +408,6 @@ public class GameHub : Hub
 
         if (isOT)
         {
-            // In overtime, the first player to solve wins the entire match
             await EndMatch(r.MatchId, overtimeWinnerId: winnerId);
         }
         else if (r.Match.Player1Score >= 3 || r.Match.Player2Score >= 3 || r.RoundNumber >= 5)
@@ -451,17 +451,14 @@ public class GameHub : Hub
 
         if (r.Match!.Player1Score >= 3 || r.Match.Player2Score >= 3)
         {
-            // Someone hit 3 wins — end normally
             await EndMatch(r.MatchId);
         }
         else if (r.RoundNumber >= 5 && stillTied)
         {
-            // Tied after round 5 (or tied OT timeout) → start another OT round
-            await StartRound(r.MatchId);
+            await StartRound(r.MatchId); // tied after 5 rounds → overtime
         }
         else if (r.RoundNumber >= 5)
         {
-            // Round 5 finished, someone leads — end
             await EndMatch(r.MatchId);
         }
         else
@@ -493,14 +490,12 @@ public class GameHub : Hub
         var p2 = m.Player2;
         if (p1 == null || p2 == null) return;
 
-        // Determine actual winner: overtime winner overrides score comparison
+        // overtime winner takes priority; otherwise compare scores
         int? winnerId = overtimeWinnerId;
         if (winnerId == null)
         {
             if      (m.Player1Score > m.Player2Score) winnerId = m.Player1Id;
             else if (m.Player2Score > m.Player1Score) winnerId = m.Player2Id;
-            // If still null after 5 rounds with equal score, the logic should
-            // have gone to OT — but handle gracefully just in case
         }
 
         if (winnerId == m.Player1Id)
@@ -519,7 +514,6 @@ public class GameHub : Hub
             p2.Wins++;   p2.Points += winDelta;
             p1.Losses++; p1.Points  = Math.Max(0, p1.Points - lossDelta);
         }
-        // No draw path — draws go to overtime
 
         m.Player1PointsDelta = p1Delta;
         m.Player2PointsDelta = p2Delta;
@@ -552,8 +546,7 @@ public class GameHub : Hub
 public class QueuedPlayer { public int UserId; public string ConnId = ""; }
 public class MatchState
 {
-    public string Group = "";
-    public string P1Conn = ""; public int P1UserId;
-    public string P2Conn = ""; public int P2UserId;
-    public bool   IsOvertime = false;
+    public string Group    = "";
+    public string P1Conn   = ""; public int P1UserId;
+    public string P2Conn   = ""; public int P2UserId;
 }

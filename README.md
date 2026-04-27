@@ -1,233 +1,65 @@
-# Wordle 1v1 - Multiplayer Word Game
+# WordleBattle
 
-Complete authentication system with queue-based matchmaking, real-time gameplay, and AI word generation.
+1v1 real-time multiplayer Wordle. Two players compete to guess the same word across 5 rounds. First to 3 round wins takes the match.
 
 ## Features
 
-- **Authentication System**: Register/Login with Username, Email, Password
-- **Queue Matchmaking**: Automatic player matching (NO join codes)
-- **Real-time Gameplay**: SignalR for instant updates
-- **60-Second Timer**: Per round countdown
-- **Opponent View**: Miniature board showing opponent progress
-- **Best of 5**: First to 3 wins OR most points after 5 rounds
-- **AI Word Generation**: Claude API generates random 5-letter words
-- **Points System**: Win +10, Lose -5
+- Register / login with username, email and password
+- Queue-based matchmaking — no invite codes needed
+- Real-time gameplay via SignalR
+- 60 seconds and 6 guesses per round
+- Rank system with 9 tiers (Bronze → Lexicon God)
+- Leaderboard, match history and friend system
+- Profile customization — avatar, border, title, banner and bio
+- Overtime if tied after 5 rounds — first to solve wins the match
 
-## Quick Start
+## Tech Stack
 
-### 1. Install .NET 8
-```bash
-# Check if installed
-dotnet --version
+- **Backend**: ASP.NET Core 8, SignalR, Entity Framework Core (SQLite), JWT, BCrypt
+- **Frontend**: HTML, CSS, Vanilla JavaScript
+- **Hosting**: Railway (auto-deploy from GitHub)
 
-# If not, download from: https://dotnet.microsoft.com/download
-```
+## Run Locally
 
-### 2. Setup Database
-```bash
-cd WordleBattle
+Requires .NET 8 SDK.
 
-# Install EF Core tools (one-time)
-dotnet tool install --global dotnet-ef
-
-# Create database
-dotnet ef migrations add Initial
-dotnet ef database update
-```
-
-### 3. Run Locally
 ```bash
 dotnet restore
 dotnet run
 ```
 
-Open browser: `http://localhost:5000`
+Open `http://localhost:5000`. The database is created automatically on first run.
 
-## How to Play
+## Deploy (Railway)
 
-1. **Register**: Username (3-20 chars), Email, Password (min 6 chars)
-2. **Login**: Use your credentials
-3. **Play Game**: Click button to enter queue
-4. **Find Game**: Automatic matching with another player
-5. **Game Start**: Both players get same random 5-letter word
-6. **Play Round**: Type guesses, 60 seconds per round
-7. **Win**: First to guess correctly OR first to 3 round wins
+The project is set up for Railway via GitHub. Push to main and it deploys automatically.
 
-## Game Rules
-
-- **5 Rounds Total**: Best of 5
-- **60 Seconds**: Per round timer
-- **6 Guesses**: Maximum attempts per round
-- **Scoring**: 
-  - Win round = 1 point
-  - Win match = +10 points, opponent -5 points
-  - Draw round (timeout) = no points
-
-## Color Coding
-
-- **Green**: Correct letter, correct position
-- **Yellow**: Correct letter, wrong position
-- **Gray**: Letter not in word
-
-## Tech Stack
-
-**Backend:**
-- ASP.NET Core 8
-- Entity Framework Core (SQLite)
-- SignalR (real-time)
-- JWT Authentication
-- BCrypt password hashing
-
-**Frontend:**
-- HTML5, CSS3, Vanilla JavaScript
-- SignalR Client
-
-**External:**
-- Claude API (word generation & validation)
+Set these environment variables in Railway:
+- `JWT_SECRET` — any long random string
+- `DATA_PATH` — path to persistent volume (e.g. `/data`)
+- `PORT` — set automatically by Railway
 
 ## Project Structure
 
 ```
 WordleBattle/
-├── Models/
-│   ├── User.cs
-│   ├── Match.cs
-│   └── DTOs/AuthDTOs.cs
-├── Data/
-│   └── ApplicationDbContext.cs
-├── Services/
-│   ├── AuthService.cs
-│   └── WordService.cs
-├── Hubs/
-│   └── GameHub.cs (Queue matchmaking)
-├── Controllers/
-│   └── AuthController.cs
-├── wwwroot/
-│   ├── index.html
-│   ├── css/style.css
-│   └── js/game.js
-├── Program.cs
-└── appsettings.json
+├── Controllers/     API endpoints (auth, profile, friends)
+├── Hubs/            GameHub — SignalR matchmaking and gameplay
+├── Models/          Database models and DTOs
+├── Services/        AuthService, WordService
+├── Data/            EF Core DbContext
+├── wwwroot/         Frontend (index.html, css, js)
+└── Program.cs       App setup and database initialization
 ```
 
-## Configuration
+## Game Rules
 
-Edit `appsettings.json`:
+- Best of 5 rounds — first to 3 wins takes the match
+- 60 seconds and 6 guesses per round
+- Tied after 5 rounds → overtime, first correct guess wins
+- Win: +100–120 pts / Lose: −50–60 pts
+- 🟩 Correct position · 🟨 Wrong position · ⬛ Not in word
 
-```json
-{
-  "JwtSecret": "your-secret-key-here",
-  "ClaudeApiKey": "your-claude-api-key"
-}
-```
+---
 
-**Get Claude API Key**: https://console.anthropic.com
-
-## Database Schema
-
-**Users:**
-- Id, Username (unique), Email (unique), PasswordHash
-- Points, Wins, Losses, CreatedAt
-
-**Matches:**
-- Id, Player1Id, Player2Id, WinnerId
-- Player1Score, Player2Score, Status, CreatedAt
-
-**Rounds:**
-- Id, MatchId, RoundNumber, Word, WinnerId
-- Player1GuessCount, Player2GuessCount
-- StartedAt, CompletedAt
-
-## Deploy to Azure
-
-### 1. Create Resources
-```bash
-az login
-
-az group create --name WordleRG --location westeurope
-
-az appservice plan create \
-  --name WordlePlan \
-  --resource-group WordleRG \
-  --sku B1 \
-  --is-linux
-
-az webapp create \
-  --name wordle-yourname \
-  --resource-group WordleRG \
-  --plan WordlePlan \
-  --runtime "DOTNET|8.0"
-```
-
-### 2. Set Environment Variables
-```bash
-az webapp config appsettings set \
-  --resource-group WordleRG \
-  --name wordle-yourname \
-  --settings \
-    JwtSecret="your-jwt-secret" \
-    ClaudeApiKey="your-claude-key"
-```
-
-### 3. Deploy
-```bash
-dotnet publish -c Release
-
-cd bin/Release/net8.0/publish
-zip -r ../deploy.zip .
-
-az webapp deployment source config-zip \
-  --resource-group WordleRG \
-  --name wordle-yourname \
-  --src ../deploy.zip
-```
-
-### 4. Access
-```
-https://wordle-yourname.azurewebsites.net
-```
-
-## Troubleshooting
-
-**Database errors:**
-```bash
-dotnet ef database drop
-dotnet ef migrations add Initial
-dotnet ef database update
-```
-
-**Port already in use:**
-Change in `appsettings.json`:
-```json
-"Urls": "http://localhost:5001"
-```
-
-**Authentication fails:**
-- Check JwtSecret is set
-- Clear browser localStorage
-- Re-register user
-
-**Words not generating:**
-- Verify Claude API key
-- Check API quota
-- View console for errors
-
-## Development
-
-**Watch mode:**
-```bash
-dotnet watch run
-```
-
-**View logs:**
-```bash
-dotnet run --verbosity detailed
-```
-
-## License
-
-MIT
-
-## Credits
-
-Built for Emne 9 - Fordypningsprosjekt
+Built for Fordypningsprosjekt — Gokstad Akademiet

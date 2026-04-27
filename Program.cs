@@ -9,15 +9,15 @@ using WordleBattle.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// JWT secret — prefer env var (production), fall back to appsettings (dev)
+// prefer env var in production, fall back to appsettings in dev
 var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
     ?? builder.Configuration["JwtSecret"]
     ?? throw new InvalidOperationException("JWT_SECRET env var or JwtSecret config is required");
 
-// Write back into config so AuthService.GenerateToken uses the SAME secret as validation
+// write back so AuthService picks up the same value
 builder.Configuration["JwtSecret"] = jwtSecret;
 
-// SQLite path — DATA_PATH env var points to a persistent volume on Railway/Fly.io
+// DATA_PATH points to a persistent volume on Railway
 var dataPath  = Environment.GetEnvironmentVariable("DATA_PATH") ?? "";
 var dbFile    = string.IsNullOrEmpty(dataPath)
     ? "wordle.db"
@@ -92,6 +92,7 @@ using (var scope = app.Services.CreateScope())
             FOREIGN KEY (UserId)  REFERENCES Users(Id)   ON DELETE CASCADE
         )");
 
+    // add columns that were introduced after the initial schema — safe to run repeatedly
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN Bio TEXT NOT NULL DEFAULT ''"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN Banner TEXT"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Matches ADD COLUMN Player1PointsDelta INTEGER NOT NULL DEFAULT 0"); } catch { }
@@ -121,6 +122,6 @@ app.UseStaticFiles();
 app.MapControllers();
 app.MapHub<GameHub>("/gamehub");
 
-// Railway / Fly.io inject PORT — bind to it so the reverse-proxy can reach us
+// Railway injects PORT at runtime
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
 app.Run($"http://+:{port}");
