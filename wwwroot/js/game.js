@@ -392,7 +392,7 @@ function closeSettingsModal() {
     document.getElementById('settingsModal').classList.add('hidden');
 }
 
-const SETTINGS_DEFAULTS = { lightMode: false, soundEnabled: true, musicEnabled: true, musicVolume: 30 };
+const SETTINGS_DEFAULTS = { lightMode: false, soundEnabled: true, musicEnabled: true, musicVolume: 20 };
 
 function loadStoredSettings() {
     try {
