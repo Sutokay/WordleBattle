@@ -24,6 +24,11 @@ public class GameHub : Hub
     private static readonly object _queueLock = new();
     private static readonly List<QueuedPlayer> _queue = new();
 
+    // Prevents WinRound and TimeoutRound from both processing the same round
+    // when they fire simultaneously (e.g. correct guess right as the 61-second timer fires).
+    // TryAdd is atomic: only the first caller proceeds; the second returns false immediately.
+    private static readonly ConcurrentDictionary<int, bool> _roundFinalizing = new();
+
     public GameHub(
         IServiceScopeFactory scopeFactory,
         IHubContext<GameHub> hubContext,
@@ -375,6 +380,13 @@ public class GameHub : Hub
 
     private async Task WinRound(int roundId, int winnerId)
     {
+        // Atomic guard — if TimeoutRound (or a duplicate WinRound) already claimed this
+        // round, bail out immediately before touching the database.
+        if (!_roundFinalizing.TryAdd(roundId, true)) return;
+
+        try
+        {
+
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -418,10 +430,20 @@ public class GameHub : Hub
         {
             await StartRound(r.MatchId);
         }
+
+        } // end try
+        finally { _roundFinalizing.TryRemove(roundId, out _); }
     }
 
     private async Task TimeoutRound(int roundId)
     {
+        // Atomic guard — prevents double-processing when both the 61-second timer and
+        // the "both players completed" path in Guess fire for the same round.
+        if (!_roundFinalizing.TryAdd(roundId, true)) return;
+
+        try
+        {
+
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -465,6 +487,9 @@ public class GameHub : Hub
         {
             await StartRound(r.MatchId);
         }
+
+        } // end try
+        finally { _roundFinalizing.TryRemove(roundId, out _); }
     }
 
     private async Task EndMatch(int matchId, int? overtimeWinnerId = null)

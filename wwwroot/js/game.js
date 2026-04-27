@@ -1737,8 +1737,16 @@ async function submitGuess() {
     currentGuess = '';
     renderBoard('myBoard', myGuesses, false);
     try {
-        const res = await conn.invoke('Guess', matchId, wordToSubmit);
+        // 6-second timeout so a dropped SignalR call never freezes the input
+        const res = await Promise.race([
+            conn.invoke('Guess', matchId, wordToSubmit),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000))
+        ]);
         if (res && !res.success && res.error) {
+            // "No active round" / "already finished" means the round ended simultaneously
+            // with the guess — not an input error, so just let the RoundEnd event handle it.
+            const roundEndedErrors = ['no active round', 'you already finished this round'];
+            if (roundEndedErrors.some(e => res.error.toLowerCase().includes(e))) return;
             currentGuess = wordToSubmit;
             renderBoard('myBoard', myGuesses, false);
             showError(res.error);
