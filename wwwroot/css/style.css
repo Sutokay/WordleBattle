@@ -2530,16 +2530,6 @@ button:active { opacity: 0.75; transform: scale(0.99); }
 .friend-btn.remove { border-color: var(--danger); color: var(--danger); background: transparent; }
 .friends-empty { color: var(--text-muted); font-size: 0.85rem; padding: 20px 0; text-align: center; }
 
-/* Colorblind / high-contrast mode */
-body.colorblind .tile[data-state="correct"]  { background: #f5793a; border-color: #f5793a; }
-body.colorblind .tile[data-state="present"]  { background: #85c0f9; border-color: #85c0f9; }
-body.colorblind .key[data-state="correct"]   { background: #f5793a; }
-body.colorblind .key[data-state="present"]   { background: #85c0f9; }
-body.high-contrast .tile[data-state="correct"] { background: #ff6d00; border-color: #ff6d00; }
-body.high-contrast .tile[data-state="present"] { background: #538fff; border-color: #538fff; }
-body.high-contrast .key[data-state="correct"]  { background: #ff6d00; }
-body.high-contrast .key[data-state="present"]  { background: #538fff; }
-
 /* Player profile modal — reuses own-profile classes, just disable editable elements */
 .pp-bio {
     font-size: 0.82rem;
@@ -2642,8 +2632,9 @@ body.high-contrast .key[data-state="present"]  { background: #538fff; }
     gap: 8px;
     font-size: 0.83rem;
 }
-.htp-rank-dot  { font-size: 0.9rem; flex-shrink: 0; }
-.htp-rank-name { font-weight: 600; color: var(--text); min-width: 100px; }
+.htp-rank-dot   { font-size: 0.9rem; flex-shrink: 0; }
+.htp-rank-score { font-size: 0.75rem; color: var(--text-muted); min-width: 44px; font-variant-numeric: tabular-nums; }
+.htp-rank-name  { font-weight: 600; color: var(--text); min-width: 96px; }
 .htp-rank-title { color: var(--text-muted); font-style: italic; }
 
 @media (max-width: 680px) {

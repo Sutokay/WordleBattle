@@ -453,7 +453,7 @@ function onVolumeChange(val) {
     const s = loadStoredSettings();
     s.musicVolume = parseInt(val, 10);
     localStorage.setItem('wb_settings', JSON.stringify(s));
-    if (_bgMusic) _bgMusic.volume = (s.musicVolume / 100) * 0.20;
+    if (_bgMusic) _bgMusic.volume = (s.musicVolume / 100) * 0.06;
 }
 
 function applySettings(s) {
@@ -543,8 +543,7 @@ let _musicStarted   = false; // true once play() has been called, prevents doubl
 
 function _musicVolume() {
     const vol = loadStoredSettings().musicVolume ?? 20;
-    // linear scale capped at 0.20 so music stays quiet in the background
-    return (vol / 100) * 0.20;
+    return (vol / 100) * 0.06;
 }
 
 function _fadeInMusic(audio, targetVol, durationMs = 3000) {

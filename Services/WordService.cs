@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Hosting;
-
 namespace WordleBattle.Services;
 
 public class WordService

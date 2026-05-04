@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=30">
+    <link rel="stylesheet" href="css/style.css?v=31">
 </head>
 <body>
 
@@ -57,7 +57,7 @@
 
         <div class="menu-left-panel">
             <div class="user-card">
-                <div class="user-card-banner" id="menuBanner"></div>
+                <div class="user-card-banner" id="menuBanner" onclick="openProfile()" title="View profile"></div>
                 <div class="user-card-body" onclick="openProfile()" title="View profile">
                     <div class="user-card-avatar-slot">
                         <div class="user-avatar" id="menuAvatar">?</div>
@@ -562,9 +562,9 @@
                     <div class="tile absent">O</div>
                     <div class="tile absent">G</div>
                     <div class="tile absent">U</div>
-                    <div class="tile absent htp-grey-highlight">E</div>
+                    <div class="tile absent">E</div>
                 </div>
-                <p><strong>E</strong> is <strong>not</strong> in the word at all.</p>
+                <p><strong>No letters</strong> are in the word.</p>
             </div>
         </div>
 
@@ -583,7 +583,7 @@
             <div class="htp-section-title">Overtime</div>
             <ul class="htp-list">
                 <li>If the score is tied after 5 rounds, <strong>Overtime</strong> begins.</li>
-                <li>A new word is given with no turn limit — the <strong>first correct guess wins</strong> the match.</li>
+                <li>New words are given with no round limit — the <strong>first correct guess wins</strong> the match.</li>
             </ul>
         </div>
 
@@ -591,15 +591,15 @@
             <div class="htp-section-title">Points &amp; Ranks</div>
             <p class="htp-sub">Win points by winning matches. Lose points when you lose. Your rank reflects your skill level.</p>
             <div class="htp-ranks">
-                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#cd7f32">●</span><span class="htp-rank-name">Bronze</span><span class="htp-rank-title">Letter Fumbler</span></div>
-                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#aaa">●</span><span class="htp-rank-name">Silver</span><span class="htp-rank-title">Page Wanderer</span></div>
-                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#ffd700">●</span><span class="htp-rank-name">Gold</span><span class="htp-rank-title">Phrase Seeker</span></div>
-                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#b0e0ff">●</span><span class="htp-rank-name">Platinum</span><span class="htp-rank-title">Puzzle Weaver</span></div>
-                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#4fc3f7">●</span><span class="htp-rank-name">Diamond</span><span class="htp-rank-title">Word Decrypter</span></div>
-                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#C77DFF">●</span><span class="htp-rank-name">Champion</span><span class="htp-rank-title">Pattern Finder</span></div>
-                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#FF4500">●</span><span class="htp-rank-name">Master</span><span class="htp-rank-title">The Fluent</span></div>
-                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#FF3C6E">●</span><span class="htp-rank-name">Grandmaster</span><span class="htp-rank-title">The Unscrambler</span></div>
-                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#FFD700">●</span><span class="htp-rank-name">Lexicon God</span><span class="htp-rank-title">The Divine Word</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#cd7f32">●</span><span class="htp-rank-score">0</span><span class="htp-rank-name">Bronze</span><span class="htp-rank-title">Letter Fumbler</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#aaa">●</span><span class="htp-rank-score">1 000</span><span class="htp-rank-name">Silver</span><span class="htp-rank-title">Page Wanderer</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#ffd700">●</span><span class="htp-rank-score">2 000</span><span class="htp-rank-name">Gold</span><span class="htp-rank-title">Phrase Seeker</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#b0e0ff">●</span><span class="htp-rank-score">3 000</span><span class="htp-rank-name">Platinum</span><span class="htp-rank-title">Puzzle Weaver</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#4fc3f7">●</span><span class="htp-rank-score">4 000</span><span class="htp-rank-name">Diamond</span><span class="htp-rank-title">Word Decrypter</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#C77DFF">●</span><span class="htp-rank-score">5 000</span><span class="htp-rank-name">Champion</span><span class="htp-rank-title">Pattern Finder</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#FF4500">●</span><span class="htp-rank-score">6 000</span><span class="htp-rank-name">Master</span><span class="htp-rank-title">The Fluent</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#FF3C6E">●</span><span class="htp-rank-score">7 000</span><span class="htp-rank-name">Grandmaster</span><span class="htp-rank-title">The Unscrambler</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#FFD700">●</span><span class="htp-rank-score">8 000</span><span class="htp-rank-name">Lexicon God</span><span class="htp-rank-title">The Divine Word</span></div>
             </div>
         </div>
 
@@ -614,6 +614,6 @@
     </div>
 </div>
 
-<script src="js/game.js?v=30"></script>
+<script src="js/game.js?v=31"></script>
 </body>
 </html>

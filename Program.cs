@@ -53,7 +53,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddHttpClient();
 builder.Services.AddScoped<WordService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddSignalR();
