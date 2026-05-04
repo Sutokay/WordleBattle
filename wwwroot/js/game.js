@@ -385,7 +385,7 @@ function openSettingsModal() {
     document.getElementById('settingLightMode').checked = !!s.lightMode;
     document.getElementById('settingSounds').checked    = !!s.soundEnabled;
     document.getElementById('settingMusic').checked     = !!s.musicEnabled;
-    document.getElementById('settingMusicVolume').value = s.musicVolume ?? 30;
+    document.getElementById('settingMusicVolume').value = s.musicVolume ?? 20;
     document.getElementById('settingsModal').classList.remove('hidden');
 }
 function closeSettingsModal() {
@@ -450,8 +450,7 @@ function onVolumeChange(val) {
     const s = loadStoredSettings();
     s.musicVolume = parseInt(val, 10);
     localStorage.setItem('wb_settings', JSON.stringify(s));
-    // exponential curve so low values are actually quiet
-    if (_bgMusic) _bgMusic.volume = Math.pow(s.musicVolume / 100, 2.2);
+    if (_bgMusic) _bgMusic.volume = (s.musicVolume / 100) * 0.20;
 }
 
 function applySettings(s) {
@@ -540,8 +539,9 @@ let _musicFadeTimer = null;
 let _musicStarted   = false; // true once play() has been called, prevents double-starts
 
 function _musicVolume() {
-    const vol = loadStoredSettings().musicVolume ?? 30;
-    return Math.pow(vol / 100, 2.2); // exponential so low values are actually quiet
+    const vol = loadStoredSettings().musicVolume ?? 20;
+    // linear scale capped at 0.20 so music stays quiet in the background
+    return (vol / 100) * 0.20;
 }
 
 function _fadeInMusic(audio, targetVol, durationMs = 3000) {
