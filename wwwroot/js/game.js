@@ -392,6 +392,9 @@ function closeSettingsModal() {
     document.getElementById('settingsModal').classList.add('hidden');
 }
 
+function openHowToPlay()  { closeDropdown(); document.getElementById('howToPlayModal').classList.remove('hidden'); }
+function closeHowToPlay() { document.getElementById('howToPlayModal').classList.add('hidden'); }
+
 const SETTINGS_DEFAULTS = { lightMode: false, soundEnabled: true, musicEnabled: true, musicVolume: 20 };
 
 function loadStoredSettings() {

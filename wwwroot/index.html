@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=29">
+    <link rel="stylesheet" href="css/style.css?v=30">
 </head>
 <body>
 
@@ -74,6 +74,7 @@
             </div>
             <input type="file" id="bannerPicInput" accept="image/*" style="display:none" onchange="handleBannerUpload(event)">
             <button onclick="logout()" class="btn-secondary">Logout</button>
+            <button onclick="openHowToPlay()" class="btn-secondary btn-how-to-play">How to Play</button>
         </div>
 
         <div class="menu-center">
@@ -518,6 +519,97 @@
             <div id="forgotTempPassword" style="font-family:monospace;font-size:1.15rem;font-weight:700;color:var(--green);background:var(--surface2);padding:12px 20px;border-radius:8px;letter-spacing:0.12em;margin-bottom:12px;word-break:break-all"></div>
             <p style="color:var(--text-muted);font-size:0.76rem;margin-bottom:14px">Log in with this password, then update it in Account settings.</p>
             <button onclick="closeForgotPasswordModal()">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- How to Play modal -->
+<div id="howToPlayModal" class="overlay-modal hidden">
+    <div class="overlay-backdrop" onclick="closeHowToPlay()"></div>
+    <div class="overlay-panel htp-panel">
+        <button class="overlay-close-btn" onclick="closeHowToPlay()">✕</button>
+        <h2 class="overlay-title">How to Play</h2>
+
+        <div class="htp-section">
+            <p class="htp-lead">Guess the secret word before the timer runs out. You have <strong>6 attempts</strong> per round.</p>
+        </div>
+
+        <div class="htp-section">
+            <div class="htp-section-title">Tile Colours</div>
+            <div class="htp-example">
+                <div class="htp-row">
+                    <div class="tile correct">W</div>
+                    <div class="tile absent">O</div>
+                    <div class="tile absent">R</div>
+                    <div class="tile absent">D</div>
+                    <div class="tile absent">Y</div>
+                </div>
+                <p><strong>W</strong> is in the word and in the <strong>correct</strong> spot.</p>
+            </div>
+            <div class="htp-example">
+                <div class="htp-row">
+                    <div class="tile absent">L</div>
+                    <div class="tile present">I</div>
+                    <div class="tile absent">G</div>
+                    <div class="tile absent">H</div>
+                    <div class="tile absent">T</div>
+                </div>
+                <p><strong>I</strong> is in the word but in the <strong>wrong</strong> spot.</p>
+            </div>
+            <div class="htp-example">
+                <div class="htp-row">
+                    <div class="tile absent">R</div>
+                    <div class="tile absent">O</div>
+                    <div class="tile absent">G</div>
+                    <div class="tile absent">U</div>
+                    <div class="tile absent htp-grey-highlight">E</div>
+                </div>
+                <p><strong>E</strong> is <strong>not</strong> in the word at all.</p>
+            </div>
+        </div>
+
+        <div class="htp-section">
+            <div class="htp-section-title">Match Format</div>
+            <ul class="htp-list">
+                <li>Each match consists of <strong>5 rounds</strong>.</li>
+                <li>Each round has a <strong>60-second</strong> timer — guess before time runs out.</li>
+                <li>The player who solves the word first wins the round.</li>
+                <li>If neither player solves it in time, the round is a draw.</li>
+                <li>First to <strong>3 round wins</strong> takes the match.</li>
+            </ul>
+        </div>
+
+        <div class="htp-section">
+            <div class="htp-section-title">Overtime</div>
+            <ul class="htp-list">
+                <li>If the score is tied after 5 rounds, <strong>Overtime</strong> begins.</li>
+                <li>A new word is given with no turn limit — the <strong>first correct guess wins</strong> the match.</li>
+            </ul>
+        </div>
+
+        <div class="htp-section">
+            <div class="htp-section-title">Points &amp; Ranks</div>
+            <p class="htp-sub">Win points by winning matches. Lose points when you lose. Your rank reflects your skill level.</p>
+            <div class="htp-ranks">
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#cd7f32">●</span><span class="htp-rank-name">Bronze</span><span class="htp-rank-title">Letter Fumbler</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#aaa">●</span><span class="htp-rank-name">Silver</span><span class="htp-rank-title">Page Wanderer</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#ffd700">●</span><span class="htp-rank-name">Gold</span><span class="htp-rank-title">Phrase Seeker</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#b0e0ff">●</span><span class="htp-rank-name">Platinum</span><span class="htp-rank-title">Puzzle Weaver</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#4fc3f7">●</span><span class="htp-rank-name">Diamond</span><span class="htp-rank-title">Word Decrypter</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#C77DFF">●</span><span class="htp-rank-name">Champion</span><span class="htp-rank-title">Pattern Finder</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#FF4500">●</span><span class="htp-rank-name">Master</span><span class="htp-rank-title">The Fluent</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#FF3C6E">●</span><span class="htp-rank-name">Grandmaster</span><span class="htp-rank-title">The Unscrambler</span></div>
+                <div class="htp-rank-row"><span class="htp-rank-dot" style="color:#FFD700">●</span><span class="htp-rank-name">Lexicon God</span><span class="htp-rank-title">The Divine Word</span></div>
+            </div>
+        </div>
+
+        <div class="htp-section">
+            <div class="htp-section-title">Titles, Borders &amp; Leaderboard</div>
+            <ul class="htp-list">
+                <li>Each rank unlocks a unique <strong>title</strong> displayed on your profile and in-game.</li>
+                <li>Higher ranks earn increasingly rare animated <strong>avatar borders</strong>.</li>
+                <li>The global <strong>Leaderboard</strong> ranks all players by total points — climb to the top.</li>
+            </ul>
         </div>
     </div>
 </div>

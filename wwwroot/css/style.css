@@ -2555,6 +2555,97 @@ body.high-contrast .key[data-state="present"]  { background: #538fff; }
     border-radius: 8px;
 }
 
+/* ── How to Play modal ────────────────────────────────────────────── */
+.btn-how-to-play {
+    font-size: 0.78rem;
+    padding: 7px 14px;
+    opacity: 0.7;
+}
+.btn-how-to-play:hover { opacity: 1; }
+
+.htp-panel {
+    width: min(520px, 94vw);
+    gap: 0;
+    padding-bottom: 28px;
+}
+.htp-section {
+    border-top: 1px solid var(--border-dim);
+    padding: 16px 0 4px;
+}
+.htp-section:first-of-type { border-top: none; padding-top: 4px; }
+.htp-section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+.htp-lead {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-bottom: 4px;
+}
+.htp-sub {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+.htp-example {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+.htp-example p {
+    font-size: 0.83rem;
+    color: var(--text-dim);
+    line-height: 1.45;
+    margin: 0;
+}
+.htp-example p strong { color: var(--text); }
+.htp-row {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.htp-row .tile {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    border-width: 2px;
+}
+.htp-list {
+    margin: 0;
+    padding-left: 18px;
+    list-style: disc;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.htp-list li {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+}
+.htp-list li strong { color: var(--text); }
+.htp-ranks {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.htp-rank-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.83rem;
+}
+.htp-rank-dot  { font-size: 0.9rem; flex-shrink: 0; }
+.htp-rank-name { font-weight: 600; color: var(--text); min-width: 100px; }
+.htp-rank-title { color: var(--text-muted); font-style: italic; }
+
 @media (max-width: 680px) {
     .auth-title  { font-size: 2.5rem; }
     .game-header { width: 95vw; }
