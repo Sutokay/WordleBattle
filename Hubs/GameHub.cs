@@ -15,18 +15,12 @@ public class GameHub : Hub
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<GameHub> _logger;
 
-    // _hubCtx is static so background tasks (StartRound, WinRound, etc.) can send
-    // messages to clients after the hub instance that started them has been disposed.
     private static IHubContext<GameHub> _hubCtx = null!;
 
-    private static readonly ConcurrentDictionary<string, int> _connToUser = new(); // connectionId → userId
-    private static readonly ConcurrentDictionary<int, MatchState> _matches = new(); // matchId → state
+    private static readonly ConcurrentDictionary<string, int> _connToUser = new();
+    private static readonly ConcurrentDictionary<int, MatchState> _matches = new();
     private static readonly object _queueLock = new();
     private static readonly List<QueuedPlayer> _queue = new();
-
-    // Prevents WinRound and TimeoutRound from both processing the same round
-    // when they fire simultaneously (e.g. correct guess right as the 61-second timer fires).
-    // TryAdd is atomic: only the first caller proceeds; the second returns false immediately.
     private static readonly ConcurrentDictionary<int, bool> _roundFinalizing = new();
 
     public GameHub(
@@ -86,20 +80,20 @@ public class GameHub : Hub
 
             if (m == null || m.Status == "Completed") return (0, 0);
 
-            m.Status = "Completed";
+            m.Status      = "Completed";
             m.CompletedAt = DateTime.UtcNow;
 
             int winnerId  = md.P1UserId == disconnectedUserId ? md.P2UserId : md.P1UserId;
             m.WinnerId    = winnerId;
             int winDelta  = Random.Shared.Next(100, 121);
-            int lossDelta = Random.Shared.Next(50,  61);
+            int lossDelta = Random.Shared.Next(50, 61);
 
             if (m.Player1Id == winnerId)
             {
                 m.Player1!.Wins++;   m.Player1.Points += winDelta;
                 int loserBefore = m.Player2!.Points;
                 lossDelta = Math.Min(lossDelta, loserBefore);
-                m.Player2.Losses++;  m.Player2.Points = Math.Max(0, loserBefore - lossDelta);
+                m.Player2.Losses++;  m.Player2.Points  = Math.Max(0, loserBefore - lossDelta);
                 m.Player1PointsDelta =  winDelta;
                 m.Player2PointsDelta = -lossDelta;
             }
@@ -108,7 +102,7 @@ public class GameHub : Hub
                 m.Player2!.Wins++;   m.Player2.Points += winDelta;
                 int loserBefore = m.Player1!.Points;
                 lossDelta = Math.Min(lossDelta, loserBefore);
-                m.Player1.Losses++;  m.Player1.Points = Math.Max(0, loserBefore - lossDelta);
+                m.Player1.Losses++;  m.Player1.Points  = Math.Max(0, loserBefore - lossDelta);
                 m.Player2PointsDelta =  winDelta;
                 m.Player1PointsDelta = -lossDelta;
             }
@@ -270,7 +264,7 @@ public class GameHub : Hub
         if (m == null || m.Status == "Completed") return;
 
         var rNum = m.Rounds.Count + 1;
-        if (rNum > 20) { await EndMatch(matchId); return; } // safety cap
+        if (rNum > 20) { await EndMatch(matchId); return; }
 
         var word = await wordService.GetRandomWordAsync();
         var r    = new Round { MatchId = matchId, RoundNumber = rNum, Word = word, StartedAt = DateTime.UtcNow };
@@ -284,11 +278,11 @@ public class GameHub : Hub
         {
             await _hubCtx.Clients.Group(md.Group).SendAsync("RoundStart", new
             {
-                round    = rNum,
-                p1Score  = m.Player1Score,
-                p2Score  = m.Player2Score,
-                p1Name   = m.Player1!.Username,
-                p2Name   = m.Player2!.Username,
+                round      = rNum,
+                p1Score    = m.Player1Score,
+                p2Score    = m.Player2Score,
+                p1Name     = m.Player1!.Username,
+                p2Name     = m.Player2!.Username,
                 isOvertime = isOT
             });
 
@@ -334,7 +328,7 @@ public class GameHub : Hub
 
         bool isP1 = m.Player1Id == userId;
 
-        if (isP1  && r.Player1Completed) return new { success = false, error = "You already finished this round" };
+        if ( isP1 && r.Player1Completed) return new { success = false, error = "You already finished this round" };
         if (!isP1 && r.Player2Completed) return new { success = false, error = "You already finished this round" };
 
         var  res     = wordService.CheckGuess(word, r.Word);
@@ -380,115 +374,93 @@ public class GameHub : Hub
 
     private async Task WinRound(int roundId, int winnerId)
     {
-        // Atomic guard — if TimeoutRound (or a duplicate WinRound) already claimed this
-        // round, bail out immediately before touching the database.
         if (!_roundFinalizing.TryAdd(roundId, true)) return;
 
         try
         {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var r = await db.Rounds
+                .Include(x => x.Match).ThenInclude(x => x!.Player1)
+                .Include(x => x.Match).ThenInclude(x => x!.Player2)
+                .FirstOrDefaultAsync(x => x.Id == roundId);
 
-        var r = await db.Rounds
-            .Include(x => x.Match).ThenInclude(x => x!.Player1)
-            .Include(x => x.Match).ThenInclude(x => x!.Player2)
-            .FirstOrDefaultAsync(x => x.Id == roundId);
+            if (r == null || r.CompletedAt != null) return;
 
-        if (r == null || r.CompletedAt != null) return;
+            r.WinnerId    = winnerId;
+            r.CompletedAt = DateTime.UtcNow;
 
-        r.WinnerId    = winnerId;
-        r.CompletedAt = DateTime.UtcNow;
+            if (r.Match!.Player1Id == winnerId) r.Match.Player1Score++;
+            else                                r.Match.Player2Score++;
+            await db.SaveChangesAsync();
 
-        if (r.Match!.Player1Id == winnerId) r.Match.Player1Score++;
-        else                                r.Match.Player2Score++;
-        await db.SaveChangesAsync();
+            bool isOT = r.RoundNumber > 5;
 
-        bool isOT = r.RoundNumber > 5;
+            if (_matches.TryGetValue(r.MatchId, out var md))
+                await _hubCtx.Clients.Group(md.Group).SendAsync("RoundEnd", new
+                {
+                    winner     = winnerId,
+                    p1Score    = r.Match.Player1Score,
+                    p2Score    = r.Match.Player2Score,
+                    word       = r.Word,
+                    isOvertime = isOT
+                });
 
-        if (_matches.TryGetValue(r.MatchId, out var md))
-            await _hubCtx.Clients.Group(md.Group).SendAsync("RoundEnd", new
-            {
-                winner   = winnerId,
-                p1Score  = r.Match.Player1Score,
-                p2Score  = r.Match.Player2Score,
-                word     = r.Word,
-                isOvertime = isOT
-            });
+            await Task.Delay(3000);
 
-        await Task.Delay(3000);
-
-        if (isOT)
-        {
-            await EndMatch(r.MatchId, overtimeWinnerId: winnerId);
+            if (isOT)
+                await EndMatch(r.MatchId, overtimeWinnerId: winnerId);
+            else if (r.Match.Player1Score >= 3 || r.Match.Player2Score >= 3 || r.RoundNumber >= 5)
+                await EndMatch(r.MatchId);
+            else
+                await StartRound(r.MatchId);
         }
-        else if (r.Match.Player1Score >= 3 || r.Match.Player2Score >= 3 || r.RoundNumber >= 5)
-        {
-            await EndMatch(r.MatchId);
-        }
-        else
-        {
-            await StartRound(r.MatchId);
-        }
-
-        } // end try
         finally { _roundFinalizing.TryRemove(roundId, out _); }
     }
 
     private async Task TimeoutRound(int roundId)
     {
-        // Atomic guard — prevents double-processing when both the 61-second timer and
-        // the "both players completed" path in Guess fire for the same round.
         if (!_roundFinalizing.TryAdd(roundId, true)) return;
 
         try
         {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var r = await db.Rounds
+                .Include(x => x.Match)
+                .FirstOrDefaultAsync(x => x.Id == roundId);
 
-        var r = await db.Rounds
-            .Include(x => x.Match)
-            .FirstOrDefaultAsync(x => x.Id == roundId);
+            if (r == null || r.CompletedAt != null) return;
 
-        if (r == null || r.CompletedAt != null) return;
+            r.CompletedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
 
-        r.CompletedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync();
+            bool isOT      = r.RoundNumber > 5;
+            bool stillTied = r.Match!.Player1Score == r.Match.Player2Score;
 
-        bool isOT = r.RoundNumber > 5;
-        bool stillTied = r.Match!.Player1Score == r.Match.Player2Score;
+            if (_matches.TryGetValue(r.MatchId, out var md))
+                await _hubCtx.Clients.Group(md.Group).SendAsync("RoundEnd", new
+                {
+                    winner     = (int?)null,
+                    p1Score    = r.Match!.Player1Score,
+                    p2Score    = r.Match.Player2Score,
+                    word       = r.Word,
+                    isOvertime = isOT
+                });
 
-        if (_matches.TryGetValue(r.MatchId, out var md))
-            await _hubCtx.Clients.Group(md.Group).SendAsync("RoundEnd", new
-            {
-                winner  = (int?)null,
-                p1Score = r.Match!.Player1Score,
-                p2Score = r.Match.Player2Score,
-                word    = r.Word,
-                isOvertime = isOT
-            });
+            await Task.Delay(3000);
 
-        await Task.Delay(3000);
-
-        if (r.Match!.Player1Score >= 3 || r.Match.Player2Score >= 3)
-        {
-            await EndMatch(r.MatchId);
+            if (r.Match!.Player1Score >= 3 || r.Match.Player2Score >= 3)
+                await EndMatch(r.MatchId);
+            else if (r.RoundNumber >= 5 && stillTied)
+                await StartRound(r.MatchId);
+            else if (r.RoundNumber >= 5)
+                await EndMatch(r.MatchId);
+            else
+                await StartRound(r.MatchId);
         }
-        else if (r.RoundNumber >= 5 && stillTied)
-        {
-            await StartRound(r.MatchId); // tied after 5 rounds → overtime
-        }
-        else if (r.RoundNumber >= 5)
-        {
-            await EndMatch(r.MatchId);
-        }
-        else
-        {
-            await StartRound(r.MatchId);
-        }
-
-        } // end try
         finally { _roundFinalizing.TryRemove(roundId, out _); }
     }
 
@@ -507,15 +479,14 @@ public class GameHub : Hub
         m.Status      = "Completed";
         m.CompletedAt = DateTime.UtcNow;
 
-        int p1Delta = 0, p2Delta = 0;
+        int p1Delta   = 0, p2Delta = 0;
         int winDelta  = Random.Shared.Next(100, 121);
-        int lossDelta = Random.Shared.Next(50,  61);
+        int lossDelta = Random.Shared.Next(50, 61);
 
         var p1 = m.Player1;
         var p2 = m.Player2;
         if (p1 == null || p2 == null) return;
 
-        // overtime winner takes priority; otherwise compare scores
         int? winnerId = overtimeWinnerId;
         if (winnerId == null)
         {
@@ -526,16 +497,16 @@ public class GameHub : Hub
         if (winnerId == m.Player1Id)
         {
             m.WinnerId = m.Player1Id;
-            p1Delta =  winDelta;
-            p2Delta = -Math.Min(lossDelta, p2.Points);
+            p1Delta    =  winDelta;
+            p2Delta    = -Math.Min(lossDelta, p2.Points);
             p1.Wins++;   p1.Points += winDelta;
             p2.Losses++; p2.Points  = Math.Max(0, p2.Points - lossDelta);
         }
         else if (winnerId == m.Player2Id)
         {
             m.WinnerId = m.Player2Id;
-            p2Delta =  winDelta;
-            p1Delta = -Math.Min(lossDelta, p1.Points);
+            p2Delta    =  winDelta;
+            p1Delta    = -Math.Min(lossDelta, p1.Points);
             p2.Wins++;   p2.Points += winDelta;
             p1.Losses++; p1.Points  = Math.Max(0, p1.Points - lossDelta);
         }
@@ -552,7 +523,7 @@ public class GameHub : Hub
             {
                 winner      = m.WinnerId,
                 myScore     = m.Player1Score, oppScore    = m.Player2Score,
-                points      = p1.Points,      wins        = p1.Wins, losses = p1.Losses,
+                points      = p1.Points,      wins        = p1.Wins,      losses = p1.Losses,
                 rank        = p1.GetRank(),   rankEmoji   = p1.GetRankEmoji(),
                 pointsDelta = p1Delta
             });
@@ -560,7 +531,7 @@ public class GameHub : Hub
             {
                 winner      = m.WinnerId,
                 myScore     = m.Player2Score, oppScore    = m.Player1Score,
-                points      = p2.Points,      wins        = p2.Wins, losses = p2.Losses,
+                points      = p2.Points,      wins        = p2.Wins,      losses = p2.Losses,
                 rank        = p2.GetRank(),   rankEmoji   = p2.GetRankEmoji(),
                 pointsDelta = p2Delta
             });
@@ -571,7 +542,7 @@ public class GameHub : Hub
 public class QueuedPlayer { public int UserId; public string ConnId = ""; }
 public class MatchState
 {
-    public string Group    = "";
-    public string P1Conn   = ""; public int P1UserId;
-    public string P2Conn   = ""; public int P2UserId;
+    public string Group  = "";
+    public string P1Conn = ""; public int P1UserId;
+    public string P2Conn = ""; public int P2UserId;
 }

@@ -30,7 +30,6 @@ public class ProfileController : ControllerBase
         var user = await _db.Users.FindAsync(userId);
         if (user == null) return Unauthorized();
 
-        // Get or create profile row
         var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
         if (profile == null)
         {

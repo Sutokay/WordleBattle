@@ -8,15 +8,11 @@ public class WordService
 
     static WordService()
     {
-        // Locate the wordlist relative to the app content root at runtime
-        var basePath = AppContext.BaseDirectory;
+        var basePath     = AppContext.BaseDirectory;
         var wordlistPath = Path.Combine(basePath, "Data", "wordlist.txt");
 
         if (!File.Exists(wordlistPath))
-        {
-            // Fallback: try relative to current directory (dev mode)
             wordlistPath = Path.Combine(Directory.GetCurrentDirectory(), "Data", "wordlist.txt");
-        }
 
         if (File.Exists(wordlistPath))
         {
@@ -26,31 +22,23 @@ public class WordService
                 .Distinct()
                 .ToArray();
 
-            _validWords = new HashSet<string>(allWords, StringComparer.OrdinalIgnoreCase);
-
-            // Use only common, recognisable words as round answers (no obscure ones)
-            _answerWords = allWords
-                .Where(w => IsCommonWord(w))
-                .ToArray();
+            _validWords  = new HashSet<string>(allWords, StringComparer.OrdinalIgnoreCase);
+            _answerWords = allWords.Where(w => IsCommonWord(w)).ToArray();
 
             if (_answerWords.Length == 0)
                 _answerWords = allWords;
         }
         else
         {
-            // Hard-coded minimal fallback so the game still starts if the file is missing
-            _validWords = new HashSet<string>(FallbackWords, StringComparer.OrdinalIgnoreCase);
+            _validWords  = new HashSet<string>(FallbackWords, StringComparer.OrdinalIgnoreCase);
             _answerWords = FallbackWords;
         }
     }
 
-    // Heuristic: treat a word as a common answer candidate if it contains
-    // at least one vowel and is not overly rare (no Q/X/Z unless well-known).
     private static bool IsCommonWord(string w)
     {
         const string vowels = "AEIOU";
-        int vowelCount = w.Count(c => vowels.Contains(c));
-        return vowelCount >= 1;
+        return w.Count(c => vowels.Contains(c)) >= 1;
     }
 
     public Task<string> GetRandomWordAsync()
@@ -75,7 +63,6 @@ public class WordService
         return Task.FromResult(_validWords.Contains(word));
     }
 
-    // Returns a char array: G = correct position, Y = wrong position, X = not in word
     public char[] CheckGuess(string guess, string target)
     {
         guess  = guess.ToUpper();

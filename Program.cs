@@ -9,17 +9,14 @@ using WordleBattle.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// prefer env var in production, fall back to appsettings in dev
 var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
     ?? builder.Configuration["JwtSecret"]
-    ?? throw new InvalidOperationException("JWT_SECRET env var or JwtSecret config is required");
+    ?? throw new InvalidOperationException("JWT_SECRET is required");
 
-// write back so AuthService picks up the same value
 builder.Configuration["JwtSecret"] = jwtSecret;
 
-// DATA_PATH points to a persistent volume on Railway
-var dataPath  = Environment.GetEnvironmentVariable("DATA_PATH") ?? "";
-var dbFile    = string.IsNullOrEmpty(dataPath)
+var dataPath = Environment.GetEnvironmentVariable("DATA_PATH") ?? "";
+var dbFile   = string.IsNullOrEmpty(dataPath)
     ? "wordle.db"
     : Path.Combine(dataPath, "wordle.db");
 if (!string.IsNullOrEmpty(dataPath) && !Directory.Exists(dataPath))
@@ -91,7 +88,6 @@ using (var scope = app.Services.CreateScope())
             FOREIGN KEY (UserId)  REFERENCES Users(Id)   ON DELETE CASCADE
         )");
 
-    // add columns that were introduced after the initial schema — safe to run repeatedly
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN Bio TEXT NOT NULL DEFAULT ''"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN Banner TEXT"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE UserProfiles ADD COLUMN Settings TEXT"); } catch { }
@@ -122,6 +118,5 @@ app.UseStaticFiles();
 app.MapControllers();
 app.MapHub<GameHub>("/gamehub");
 
-// Railway injects PORT at runtime
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
 app.Run($"http://+:{port}");

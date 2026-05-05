@@ -67,7 +67,6 @@ public class AuthController : ControllerBase
                 lossesMap[loserId] = lossesMap.GetValueOrDefault(loserId) + 1;
         }
 
-        // Current win streak per user (consecutive wins from most recent match backwards)
         var streakMap = new Dictionary<int, int>();
         foreach (var uid in userIds)
         {
@@ -126,7 +125,6 @@ public class AuthController : ControllerBase
             .Take(20)
             .ToListAsync();
 
-        // Fetch opponent profiles for pictures
         var oppIds = matches
             .Select(m => m.Player1Id == userId ? m.Player2Id : m.Player1Id)
             .Where(id => id.HasValue)
@@ -152,7 +150,6 @@ public class AuthController : ControllerBase
             int? oppId     = opponent?.Id;
             oppProfileMap.TryGetValue(oppId ?? 0, out var oppProf);
 
-            // Points delta for this player (stored at match end)
             int pointsDelta = isP1 ? m.Player1PointsDelta : m.Player2PointsDelta;
 
             return new
