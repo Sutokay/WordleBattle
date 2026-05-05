@@ -1,4 +1,4 @@
-let conn        = null;
+﻿let conn        = null;
 let currentUser = null;
 let matchId     = null;
 let myPlayer    = 0;
@@ -12,8 +12,6 @@ let myRoundDone = false;
 let roundActive = false;
 let myMatchScore  = 0;
 let oppMatchScore = 0;
-// these two work together: if the round ends while the tile flip animation is still
-// playing, we hold the RoundEnd modal until the animation finishes
 let revealAnimationPromise = null;
 let pendingRoundEndData    = null;
 let _inQueue = false;
@@ -23,17 +21,16 @@ let _opponentName    = '';
 
 function capName(n) { return n ? n.charAt(0).toUpperCase() + n.slice(1) : n; }
 
-// Rank system
 const RANKS = [
-    { name: 'Bronze',      emoji: '🥉', min: 0,    max: 1000, color: '#CD7F32' },
-    { name: 'Silver',      emoji: '🥈', min: 1000, max: 2000, color: '#C0C0C0' },
-    { name: 'Gold',        emoji: '🥇', min: 2000, max: 3000, color: '#FFD700' },
-    { name: 'Platinum',    emoji: '⚪', min: 3000, max: 4000, color: '#E5E4E2' },
-    { name: 'Diamond',     emoji: '💠', min: 4000, max: 5000, color: '#B9F2FF' },
-    { name: 'Champion',    emoji: '🏆', min: 5000, max: 6000, color: '#FF4500' },
-    { name: 'Master',      emoji: '💎', min: 6000, max: 7000, color: '#9400D3' },
-    { name: 'Grandmaster', emoji: '👑', min: 7000, max: 8000, color: '#FF1493' },
-    { name: 'Lexicon God', emoji: '🔱', min: 8000, max: 9999, color: '#FFD700' },
+    { name: 'Bronze',      emoji: 'BRZ', min: 0,    max: 1000, color: '#CD7F32' },
+    { name: 'Silver',      emoji: 'SLV', min: 1000, max: 2000, color: '#C0C0C0' },
+    { name: 'Gold',        emoji: 'GLD', min: 2000, max: 3000, color: '#FFD700' },
+    { name: 'Platinum',    emoji: 'PLT', min: 3000, max: 4000, color: '#E5E4E2' },
+    { name: 'Diamond',     emoji: 'DMD', min: 4000, max: 5000, color: '#B9F2FF' },
+    { name: 'Champion',    emoji: 'CHP', min: 5000, max: 6000, color: '#FF4500' },
+    { name: 'Master',      emoji: 'MST', min: 6000, max: 7000, color: '#9400D3' },
+    { name: 'Grandmaster', emoji: 'GM', min: 7000, max: 8000, color: '#FF1493' },
+    { name: 'Lexicon God', emoji: 'LG', min: 8000, max: 9999, color: '#FFD700' },
 ];
 
 function getRank(pts) {
@@ -60,8 +57,6 @@ function rankIconHTMLFromName(rankName, sizePx = 18) {
     return rankIconHTML(r.name, r.emoji, sizePx);
 }
 
-// builds the rank progress bar on the result screen and returns a function
-// that, when called, triggers the animated fill + point counter
 function renderRankProgress(totalPoints, pointsDelta) {
     const rank     = getRank(totalPoints);
     const rankIdx  = RANKS.indexOf(rank);
@@ -210,7 +205,6 @@ async function forfeitAndGoHome() {
     triggerBar();
 }
 
-// Toasts
 function showMessage(msg, type = 'info') {
     const el = document.getElementById('toast');
     el.textContent = msg;
@@ -223,7 +217,6 @@ const showError   = m => showMessage(m, 'error');
 const showSuccess = m => showMessage(m, 'success');
 const showInfo    = m => showMessage(m, 'info');
 
-// Settings dropdown
 function toggleSettings() {
     const dropdown = document.getElementById('settingsDropdown');
     const btn      = document.getElementById('settingsBtn');
@@ -240,7 +233,6 @@ document.addEventListener('click', e => {
     }
 });
 
-// Account modal
 function openAccountModal() {
     closeDropdown();
     if (!currentUser) return;
@@ -321,7 +313,6 @@ function closeDeleteModal() {
     document.getElementById('deleteAccountModal')?.classList.add('hidden');
 }
 
-// Forgot password modal
 function openForgotPasswordModal() {
     document.getElementById('forgotPasswordModal').classList.remove('hidden');
     document.getElementById('forgotPasswordForm').classList.remove('hidden');
@@ -378,7 +369,6 @@ async function confirmDeleteAccount() {
     }
 }
 
-// Settings modal
 function openSettingsModal() {
     closeDropdown();
     const s = loadStoredSettings();
@@ -404,7 +394,6 @@ function loadStoredSettings() {
     } catch { return { ...SETTINGS_DEFAULTS }; }
 }
 
-// Save settings to the server so they persist across devices / logouts
 async function saveSettingsToServer(s) {
     const token = sessionStorage.getItem('token');
     if (!token) return;
@@ -417,7 +406,6 @@ async function saveSettingsToServer(s) {
     } catch {}
 }
 
-// Pull settings from server, merge over localStorage, return merged result
 async function loadSettingsFromServer() {
     const token = sessionStorage.getItem('token');
     if (!token) return;
@@ -430,7 +418,6 @@ async function loadSettingsFromServer() {
         if (!text) return;
         const srv = JSON.parse(text);
         if (srv && typeof srv === 'object' && Object.keys(srv).length > 0) {
-            // server wins — store merged result locally
             const merged = { ...SETTINGS_DEFAULTS, ...srv };
             localStorage.setItem('wb_settings', JSON.stringify(merged));
         }
@@ -458,7 +445,6 @@ function onVolumeChange(val) {
 
 function applySettings(s) {
     document.body.classList.toggle('light-mode', !!s.lightMode);
-    // only stop music here — starting is always done via tryStartMusic (needs a user gesture)
     if (!s.musicEnabled) {
         _musicStarted = false;
         if (_musicFadeTimer) { clearInterval(_musicFadeTimer); _musicFadeTimer = null; }
@@ -466,14 +452,12 @@ function applySettings(s) {
     }
 }
 
-// Sound effects — Web Audio API, no files needed
 let _audioCtx = null;
 function _getAudioCtx() {
     if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     return _audioCtx;
 }
 
-// Plays a tone with a quick attack and smooth exponential decay for a crisp, clean sound
 function _playTone(freq, duration, type = 'sine', vol = 0.18, delayMs = 0) {
     if (!loadStoredSettings().soundEnabled) return;
     setTimeout(() => {
@@ -487,7 +471,7 @@ function _playTone(freq, duration, type = 'sine', vol = 0.18, delayMs = 0) {
             osc.frequency.value = freq;
             osc.type = type;
             gain.gain.setValueAtTime(0, t);
-            gain.gain.linearRampToValueAtTime(vol, t + 0.006); // short attack
+            gain.gain.linearRampToValueAtTime(vol, t + 0.006);
             gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
             osc.start(t);
             osc.stop(t + duration);
@@ -495,51 +479,43 @@ function _playTone(freq, duration, type = 'sine', vol = 0.18, delayMs = 0) {
     }, delayMs);
 }
 
-// crisp tap — short high sine, barely audible
 function soundKeyPress()  { _playTone(1080, 0.07, 'sine', 0.09); }
 
-// soft low thud for invalid word
 function soundInvalid()   { _playTone(140, 0.22, 'sine', 0.22); }
 
-// clean ascending triad — correct guess
 function soundCorrect() {
     _playTone(659,  0.18, 'sine', 0.18, 0);
     _playTone(784,  0.18, 'sine', 0.18, 80);
     _playTone(1047, 0.22, 'sine', 0.16, 160);
 }
 
-// round win — bright upward chime
 function soundRoundWin() {
     _playTone(784,  0.15, 'sine', 0.16, 0);
     _playTone(1047, 0.15, 'sine', 0.16, 90);
     _playTone(1319, 0.22, 'sine', 0.14, 180);
 }
 
-// round lose — gentle downward tone
 function soundRoundLose() {
     _playTone(494, 0.2, 'sine', 0.15, 0);
     _playTone(392, 0.2, 'sine', 0.15, 110);
     _playTone(330, 0.3, 'sine', 0.13, 220);
 }
 
-// match win — full 5-note fanfare
 function soundMatchWin() {
     [659, 784, 1047, 1319, 1568].forEach((f, i) =>
         _playTone(f, 0.22, 'sine', 0.16, i * 100));
 }
 
-// match lose — slow descend fading out
 function soundMatchLose() {
     [494, 392, 330, 262].forEach((f, i) =>
         _playTone(f, 0.3, 'sine', 0.14, i * 150));
 }
 
-// Background music — three tracks that cycle, with a 3-second fade-in per track
 const MUSIC_TRACKS  = ['/audio/music1.mp3', '/audio/music2.mp3', '/audio/music3.mp3'];
 let _bgMusic        = null;
 let _musicTrackIdx  = 0;
 let _musicFadeTimer = null;
-let _musicStarted   = false; // true once play() has been called, prevents double-starts
+let _musicStarted   = false;
 
 function _musicVolume() {
     const vol = loadStoredSettings().musicVolume ?? 20;
@@ -575,7 +551,6 @@ function _loadTrack(idx) {
     return _bgMusic;
 }
 
-// Called from onSettingChange when user toggles Music on/off (guaranteed user gesture)
 function applyMusicSetting(enabled) {
     if (enabled) {
         tryStartMusic();
@@ -586,36 +561,31 @@ function applyMusicSetting(enabled) {
     }
 }
 
-// Start music — always loads a fresh Audio element to avoid stale state after blocked play()
 function tryStartMusic() {
     if (!loadStoredSettings().musicEnabled) return;
-    _musicStarted = true; // mark as started before play() so no double-start from interaction handler
+    _musicStarted = true;
     _loadTrack(_musicTrackIdx);
     _bgMusic.play().then(() => {
         _fadeInMusic(_bgMusic, _musicVolume());
     }).catch(() => {
-        _musicStarted = false; // browser blocked it — allow retry on next interaction
+        _musicStarted = false;
     });
 }
 
-// Registers capture-phase listeners that start music on the first interaction after a
-// page refresh. Uses _musicStarted flag so toggling other settings never re-triggers it.
 let _musicInteractionRegistered = false;
 function _registerMusicOnInteraction() {
     if (_musicInteractionRegistered) return;
     _musicInteractionRegistered = true;
     const tryPlay = () => {
-        if (_musicStarted) return; // already playing or starting — do nothing
+        if (_musicStarted) return;
         if (!loadStoredSettings().musicEnabled) return;
         tryStartMusic();
     };
-    // capture: true — fires before any child handler, even ones that stopPropagation
     document.addEventListener('click',      tryPlay, { capture: true });
     document.addEventListener('keydown',    tryPlay, { capture: true });
     document.addEventListener('touchstart', tryPlay, { capture: true });
 }
 
-// Friends modal
 let _friendsCurrentTab = 'friends';
 
 function openFriendsModal() {
@@ -873,7 +843,6 @@ function closeDropdown() {
     document.getElementById('settingsBtn')?.classList.remove('open');
 }
 
-// Player profile modal
 let _ppCurrentUserId = null;
 const _profileCache  = {};
 
@@ -883,7 +852,6 @@ async function openPlayerProfile(userId) {
     const modal = document.getElementById('playerProfileModal');
     modal.classList.remove('hidden');
 
-    // Show cached data instantly if available, otherwise show loading state
     if (_profileCache[userId]) {
         _applyPlayerProfileData(_profileCache[userId]);
     } else {
@@ -1038,7 +1006,6 @@ async function ppAddFriend(username) {
     } catch { showError('Request failed'); }
 }
 
-// Menu
 function applyUserToMenu() {
     document.getElementById('menuUsername').textContent = capName(currentUser.username);
     const r   = currentUser.rank || '';
@@ -1207,7 +1174,6 @@ function showMenu() {
         .catch(() => {});
 }
 
-// Auth
 async function register() {
     const username = document.getElementById('regUsername').value.trim();
     const email    = document.getElementById('regEmail').value.trim();
@@ -1236,11 +1202,11 @@ async function login() {
         if (!data.success) return showError(data.error || 'Invalid credentials');
         sessionStorage.setItem('token', data.token);
         currentUser = data.user;
-        await loadSettingsFromServer(); // pull saved settings before applying
+        await loadSettingsFromServer();
         applySettings(loadStoredSettings());
         try { await initSignalR(); } catch {}
         showMenu();
-        tryStartMusic(); // login is a user gesture — safe to start audio here
+        tryStartMusic();
     } catch (e) { showError('Login failed'); }
 }
 
@@ -1253,7 +1219,6 @@ function logout() {
     showScreen('authScreen');
 }
 
-// Enter key on auth forms
 document.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
     const authScreen = document.getElementById('authScreen');
@@ -1263,7 +1228,6 @@ document.addEventListener('keydown', e => {
     else register();
 });
 
-// SignalR
 async function initSignalR() {
     const token = sessionStorage.getItem('token');
 
@@ -1292,8 +1256,8 @@ async function initSignalR() {
         const oppName = data.opponent;
         _opponentName = oppName;
 
-        document.getElementById('p1Name').textContent  = myName;          // left = always me
-        document.getElementById('p2Name').textContent  = capName(oppName); // right = always opponent
+        document.getElementById('p1Name').textContent  = myName;
+        document.getElementById('p2Name').textContent  = capName(oppName);
         document.getElementById('p1Score').textContent = '0';
         document.getElementById('p2Score').textContent = '0';
         document.getElementById('roundNum').textContent = '?';
@@ -1357,8 +1321,8 @@ async function fetchPublicProfile(userId) {
 }
 
 function populateGamePanels(p1Name, p2Name) {
-    const myPanelNum  = 1; // left panel is always me
-    const oppPanelNum = 2; // right panel is always opponent
+    const myPanelNum  = 1;
+    const oppPanelNum = 2;
 
     const myAvatarEl  = document.getElementById(`p${myPanelNum}Avatar`);
     const myRankEl    = document.getElementById(`p${myPanelNum}Rank`);
@@ -1456,7 +1420,6 @@ function populateGamePanels(p1Name, p2Name) {
     }
 }
 
-// Queue
 let queueSeconds = 0;
 
 function startQueueTimer() {
@@ -1533,7 +1496,6 @@ async function cancelQueue() {
     try { if (conn && conn.state === signalR.HubConnectionState.Connected) await conn.invoke('CancelQueue'); } catch {}
 }
 
-// Game
 function hideRoundModal() {
     document.getElementById('roundEndModal').classList.add('hidden');
 }
@@ -1568,10 +1530,10 @@ function startRound(data) {
     document.getElementById('p1Score').textContent  = myMatchScore;
     document.getElementById('p2Score').textContent  = oppMatchScore;
 
-    const p1NameStr = myPlayer === 1 ? data.p1Name : data.p2Name; // my name
-    const p2NameStr = myPlayer === 1 ? data.p2Name : data.p1Name; // opp name
-    document.getElementById('p1Name').textContent = p1NameStr;  // left = me
-    document.getElementById('p2Name').textContent = p2NameStr;  // right = opponent
+    const p1NameStr = myPlayer === 1 ? data.p1Name : data.p2Name;
+    const p2NameStr = myPlayer === 1 ? data.p2Name : data.p1Name;
+    document.getElementById('p1Name').textContent = p1NameStr;
+    document.getElementById('p2Name').textContent = p2NameStr;
 
     currentGuess = '';
     myGuesses    = [];
@@ -1626,7 +1588,6 @@ function renderBoard(boardId, guesses, mini, skipColorRow = -1) {
     }
 }
 
-// flips each tile in the row one by one to reveal green/yellow/gray
 async function animateRowReveal(boardId, rowIndex, results) {
     const board = document.getElementById(boardId);
     const rows  = board.querySelectorAll('.row');
@@ -1728,7 +1689,7 @@ function handleKey(key) {
     }
 }
 
-let _guessSubmitting = false; // prevents double-submitting on fast enter presses
+let _guessSubmitting = false;
 
 async function submitGuess() {
     if (currentGuess.length !== 5) return showError('Word must be 5 letters');
@@ -1739,14 +1700,11 @@ async function submitGuess() {
     currentGuess = '';
     renderBoard('myBoard', myGuesses, false);
     try {
-        // 6-second timeout so a dropped SignalR call never freezes the input
         const res = await Promise.race([
             conn.invoke('Guess', matchId, wordToSubmit),
             new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 6000))
         ]);
         if (res && !res.success && res.error) {
-            // "No active round" / "already finished" means the round ended simultaneously
-            // with the guess — not an input error, so just let the RoundEnd event handle it.
             const roundEndedErrors = ['no active round', 'you already finished this round'];
             if (roundEndedErrors.some(e => res.error.toLowerCase().includes(e))) return;
             currentGuess = wordToSubmit;
@@ -1953,7 +1911,7 @@ document.addEventListener('keydown', e => {
 window.addEventListener('load', async () => {
     document.getElementById('siteHeader')?.classList.add('hidden');
     applySettings(loadStoredSettings());
-    _registerMusicOnInteraction(); // unlock music after refresh if user has it enabled
+    _registerMusicOnInteraction();
     const token = sessionStorage.getItem('token');
     if (!token) return showScreen('authScreen');
 
@@ -1970,14 +1928,13 @@ window.addEventListener('load', async () => {
     }
 
     currentUser = userData;
-    await loadSettingsFromServer(); // sync server settings on refresh
+    await loadSettingsFromServer();
     applySettings(loadStoredSettings());
     try { await initSignalR(); } catch {}
     showMenu();
     startFriendBadgePolling();
 });
 
-// Small helpers
 function escHtml(str) {
     return String(str)
         .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -2002,10 +1959,8 @@ function makeSmallAvatar(username, picture, borderId, sizePx = 26) {
     return el;
 }
 
-// Profile
 let userProfile = null;
 
-// Border definitions
 const BORDERS = [
     { id:'default',     label:'Default',     cls:null,                       color:'#3a3a3c', req:null },
     { id:'bronze',      label:'Bronze',      cls:'avatar-border-bronze',     color:'#CD7F32', req:{ type:'points', value:0,    display:'Reach Bronze rank'      } },
@@ -2028,7 +1983,6 @@ const BORDERS = [
     { id:'precision',   label:'Precision',   cls:'avatar-border-precision',  color:'#00B4D8', req:{ type:'avgGuesses',   value:2, lte:true, display:'Avg ≤ 2 guesses' } },
 ];
 
-// Title definitions
 const TITLES = [
     { id:'',             label:'No Title',         tier:null,           req:null },
     { id:'bronze_t',     label:'Letter Fumbler',    tier:'bronze',       req:{ type:'points', value:0,    display:'Reach Bronze'      } },
@@ -2053,7 +2007,6 @@ const TITLES = [
     { id:'legendary',    label:'Legendary',         tier:'achievement',  req:{ type:'bestStreak', value:10, display:'10-win streak' } },
 ];
 
-// Unlock helpers
 function _statVal(r, stats) {
     if (r.type === 'points') return (stats?.points ?? currentUser?.points ?? 0);
     if (r.type === 'wins')   return (stats?.wins   ?? currentUser?.wins   ?? 0);
@@ -2132,7 +2085,6 @@ async function handleBannerUpload(event) {
         if (userProfile) userProfile.banner = dataUrl;
 
         updateMenuBanner();
-        // Sync banner in profile modal if open
         const modalBanner = document.getElementById('profileModalBanner');
         if (modalBanner) {
             modalBanner.style.backgroundImage    = `url(${dataUrl})`;
@@ -2193,7 +2145,6 @@ function updateMenuTitleBadge() {
     }
 }
 
-// Open / close profile modal
 function openProfile() {
     if (!currentUser) return;
     const modal = document.getElementById('profileModal');
@@ -2238,7 +2189,6 @@ function openProfile() {
         }
     }
 
-    // Bio
     const bioEl = document.getElementById('profileBio');
     if (bioEl) bioEl.value = userProfile?.bio || '';
 
@@ -2265,7 +2215,6 @@ function openProfileTab(tabName, btnEl) {
     if (btnEl) btnEl.classList.add('active');
 }
 
-// Load + render profile data
 async function loadProfileData() {
     const token = sessionStorage.getItem('token');
     if (!token) return;
@@ -2359,7 +2308,6 @@ function renderProfileStats(data) {
     document.getElementById('profileExtraStats').classList.remove('hidden');
 }
 
-// Border picker
 function renderBorderPicker(activeBorderId) {
     const grid  = document.getElementById('borderGrid');
     if (!grid) return;
@@ -2430,7 +2378,6 @@ async function selectBorder(borderId) {
     } catch {}
 }
 
-// Title picker
 function renderTitlePicker(activeTitleId, stats) {
     const list = document.getElementById('titleList');
     if (!list) return;
@@ -2486,7 +2433,6 @@ async function selectTitle(titleId) {
     } catch {}
 }
 
-// Bio
 let _bioSaveTimer = null;
 
 function onBioInput(textarea) {
@@ -2507,7 +2453,6 @@ async function saveBio(text) {
     } catch {}
 }
 
-// Profile picture upload
 function triggerPicUpload() {
     document.getElementById('profilePicInput').click();
 }
