@@ -1762,9 +1762,9 @@ function showRoundEndModal(data) {
     const iWon  = !tied && data.winner === currentUser.id;
 
     document.getElementById('roundEndResult').textContent =
-        tied  ? "⏱ Time's up!" :
-        iWon  ? '✅ You got it!' :
-                '❌ Opponent got it!';
+        tied  ? "Time's up!" :
+        iWon  ? 'You got it!' :
+                'Opponent got it!';
     document.getElementById('roundEndWord').textContent = word;
     document.getElementById('roundEndSub').textContent  = 'Next round starting…';
     document.getElementById('roundEndModal').classList.remove('hidden');
@@ -2002,7 +2002,7 @@ const TITLES = [
     { id:'quickmind',    label:'Quick Mind',        tier:'achievement',  req:{ type:'fastestSolve', value:1, exact:true, display:'Solve in 1 guess'  } },
     { id:'sharpshooter', label:'Sharpshooter',      tier:'achievement',  req:{ type:'avgGuesses',   value:2, lte:true,   display:'Avg ≤ 2 guesses'  } },
     { id:'efficient',    label:'Efficient',         tier:'achievement',  req:{ type:'avgGuesses',   value:3, lte:true,   display:'Avg ≤ 3 guesses'  } },
-    { id:'onfire',       label:'On Fire 🔥',        tier:'achievement',  req:{ type:'bestStreak', value:3,  display:'3-win streak'  } },
+    { id:'onfire',       label:'On Fire',        tier:'achievement',  req:{ type:'bestStreak', value:3,  display:'3-win streak'  } },
     { id:'unstoppable',  label:'Unstoppable',       tier:'achievement',  req:{ type:'bestStreak', value:5,  display:'5-win streak'  } },
     { id:'legendary',    label:'Legendary',         tier:'achievement',  req:{ type:'bestStreak', value:10, display:'10-win streak' } },
 ];
