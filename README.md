@@ -1,23 +1,23 @@
 # WordleBattle
 
-1v1 sanntids multiplayer Wordle. To spillere konkurrerer om å gjette det samme ordet over 5 runder. Første til 3 rundeseire vinner kampen.
+1v1 real-time multiplayer Wordle. To spillere konkurrerer om å gjette det samme ordet over 5 runder. Første til 3 rundeseire vinner matchen.
 
 ## Funksjoner
 
 - Registrering / innlogging med brukernavn, e-post og passord
 - Queue-basert matchmaking — ingen invitasjonskoder nødvendig
-- Sanntids gameplay via SignalR
+- Real-time gameplay via SignalR
 - 60 sekunder og 6 gjett per runde
-- Rangsystem med 9 nivåer (Bronze til Lexicon God)
-- Ledertavle, kamphistorikk og vennesystem
+- Rank system med 9 nivåer (Bronze til Lexicon God)
+- Leaderboard, match historikk og vennesystem
 - Profiltilpasning — avatar, ramme, tittel, banner og bio
-- Overtid ved uavgjort etter 5 runder — første til å løse vinner kampen
+- Overtid ved uavgjort etter 5 runder — første til å løse vinner matchen
 
-## Teknisk stack
+## Teknisk
 
 - **Backend**: ASP.NET Core 8, SignalR, Entity Framework Core (SQLite), JWT, BCrypt
 - **Frontend**: HTML, CSS, Vanilla JavaScript
-- **Hosting**: Railway (auto-deploy fra GitHub)
+- **Hosting**: Railway (auto-deploy fra GitHub) — nettside: [wordlebattle.pro](https://wordlebattle.pro)
 
 ## Kjør lokalt
 
@@ -30,14 +30,6 @@ dotnet run
 
 Åpne `http://localhost:5000`. Databasen opprettes automatisk ved første kjøring.
 
-## Deploy (Railway)
-
-Prosjektet er satt opp for Railway via GitHub. Push til main og det deployes automatisk.
-
-Sett disse miljøvariablene i Railway:
-- `JWT_SECRET` — en vilkårlig lang tilfeldig streng
-- `DATA_PATH` — sti til vedvarende volum (f.eks. `/data`)
-- `PORT` — settes automatisk av Railway
 
 ## Prosjektstruktur
 ````
@@ -53,8 +45,8 @@ WordleBattle/
 
 ## Spilleregler
 
-- Best av 5 runder — første til 3 rundeseire vinner kampen
-- 60 sekunder og 6 gjetninger per runde
-- Uavgjort etter 5 runder gir overtime der første riktige gjetning vinner
-- Seier: +100–120 poeng / Tap: −50–60 poeng
-- Grønn: riktig posisjon — Gul: feil posisjon — Grå: ikke i ordet
+- Best av 5 runder — første til 3 vinner matchen
+- 60 sekunder og 6 gjett per runde
+- Uavgjort etter 5 runder blir overtime der første riktige gjett vinner
+- Win: +100–120 poeng / Loss: −50–60 poeng
+- Grønn: riktig posisjon — Gul: i ordet, men feil posisjon — Grå: ikke i ordet
